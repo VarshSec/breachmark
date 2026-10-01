@@ -9,6 +9,14 @@ heatmaps, majority-vote ensembles and exportable reports.
 
 ![BreachMark dashboard](docs/dashboard.png)
 
+## About
+
+BreachMark is a test bench for AI code reviewers. It answers one question with numbers instead of claims: *which language models can actually tell vulnerable code from safe code, and under which prompting?*
+
+It was built by [Varshit Sharma](https://github.com/VarshSec), a security engineering student, to turn the experiment from the VulnSage paper (Zibaeirad & Vieira, 2025) into a reusable tool that works with any model, keeps every answer, and explains its scores. It is not a vulnerability scanner: it measures the scanners. The Playground page lets you ask a model about your own code, but the core job is benchmarking.
+
+Status: v0.1, working end to end, tested offline with a mock provider and against simulated Ollama, OpenAI and Anthropic APIs. Real-model runs are the next step; results and issues are welcome.
+
 ## What you can do
 
 - **Run benchmarks** against Ollama (local models), any OpenAI-compatible server (OpenAI, LM Studio, vLLM,
