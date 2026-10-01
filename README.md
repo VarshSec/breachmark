@@ -104,9 +104,9 @@ docker run -p 8000:8000 -v breachmark-data:/data \
 |---|---|---|---|---|
 | `vulnsage` | 593 | C/C++ | File- and function-level vulnerabilities from Linux, Mozilla and Xen, 491 CVEs, 52 CWEs, with noise ratings (Zibaeirad & Vieira, 2025) | CC BY 4.0 |
 | `sven` | 803 | C/C++, Python | Function-level vulnerable/fixed pairs over 9 CWEs, curated from CrossVul, BigVul and VUDENC (He & Vechev, CCS 2023) | MIT |
-| `primevul` | your copy | C/C++ | Deduplicated, chronologically split function pairs with CVE and CWE labels (Ding et al., 2024). Download the `*_paired.jsonl` files from the PrimeVul repository and import them | see their repo |
+| `primevul` | **not bundled** | C/C++ | Deduplicated, chronologically split function pairs with CVE and CWE labels (Ding et al., 2024). Not included because the data is distributed via Google Drive, not the repository. Download the `*_paired.jsonl` files from [the PrimeVul repository](https://github.com/DLVulDet/PrimeVul) and import them; the importer has been tested against their published record format but not yet on the full release | MIT (repo) |
 
-Both bundled sets are in `data/` with their licenses. Pick a dataset in the run form (choose `vulnsage` to reproduce the paper's setup) or mix them; results are broken down by dataset and language. Other datasets with vulnerable/fixed pairs can be added with a small importer in `breachmark/importer.py`.
+The two bundled sets are in `data/` with their licenses; PrimeVul must be added by you. Pick a dataset in the run form (choose `vulnsage` to reproduce the paper's setup) or mix them; results are broken down by dataset and language. Other datasets with vulnerable/fixed pairs can be added with a small importer in `breachmark/importer.py`.
 
 ## How a run works
 
