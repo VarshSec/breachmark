@@ -26,7 +26,7 @@ def wait_done(client, rid, timeout=20):
 
 
 def test_health_and_pages(client):
-    assert client.get("/api/health").json()["samples"] == 593
+    assert client.get("/api/health").json()["samples"] >= 593
     for path in ["/", "/samples", "/samples?cwe=CWE-119&sort=year&dir=desc", "/samples/4", "/samples/4?full=1",
                  "/runs", "/runs/new", "/compare", "/playground", "/prompts", "/settings"]:
         r = client.get(path)
@@ -118,3 +118,20 @@ def test_blind_mode_hides_cwe(client):
     page = client.get(f"/runs/{blind}")
     assert b"blind" in page.content
     assert b"blind: no CWE hint" not in client.get(f"/runs/{normal}").content
+
+
+def test_dataset_api_and_pages(client):
+    datasets = {d["dataset"]: d for d in client.get("/api/datasets").json()}
+    assert datasets["vulnsage"]["n"] == 593 and datasets["sven"]["n"] == 803
+    for path in ["/samples?dataset=sven&language=Python", "/samples?dataset=vulnsage&sort=dataset&dir=desc"]:
+        assert client.get(path).status_code == 200
+    sid = client.app.state.db.scalar("SELECT id FROM samples WHERE dataset='sven' AND language='Python' LIMIT 1")
+    page = client.get(f"/samples/{sid}")
+    assert page.status_code == 200 and b"Python, from the sven dataset" in page.content
+    again = client.post("/api/dataset/import", json={"format": "sven"}, headers=H).json()
+    assert again["updated"] == 803
+    assert client.post("/api/dataset/import", json={"format": "nope"}, headers=H).status_code == 400
+    assert client.post("/api/dataset/import", json={"format": "primevul", "path": "C:/does/not/exist.jsonl"}, headers=H).status_code == 400
+    r = client.post("/api/playground", json={"provider": "mock", "model": "mock-eager", "strategies": ["think"],
+                                             "code": "import os\nos.system(cmd)", "cwe": "78", "language": "Python"}, headers=H).json()
+    assert r["language"] == "Python"

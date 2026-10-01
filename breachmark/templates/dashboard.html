@@ -3,7 +3,7 @@
 <div class="page-head">
   <div>
     <h1>Which model finds real vulnerabilities?</h1>
-    <p class="lede">Every model is shown the same {{ stats.total }} real C/C++ vulnerabilities twice: once as the vulnerable code, once as the patched version. A model earns credit only when it says YES to the first and NO to the second.</p>
+    <p class="lede">Every model is shown the same real vulnerabilities twice: once as the vulnerable code, once as the patched version. A model earns credit only when it says YES to the first and NO to the second. {{ stats.total }} samples in {{ stats.languages|map(attribute='language')|join(' and ') }} from {{ stats.datasets|length }} dataset{{ '' if stats.datasets|length == 1 else 's' }}.</p>
   </div>
   <div class="actions">
     <a class="btn primary" href="/runs/new">New run</a>
@@ -14,7 +14,8 @@
 <div class="facts">
   <div><b>{{ stats.total }}</b><span>vulnerability samples</span></div>
   <div><b>{{ stats.cwes|length }}</b><span>CWE categories</span></div>
-  <div><b>{{ stats.projects|length }}</b><span>projects: {{ stats.projects|map(attribute='project')|join(', ') }}</span></div>
+  <div><b>{{ stats.datasets|length }}</b><span>datasets: {{ stats.datasets|map(attribute='dataset')|join(', ') }}</span></div>
+  <div><b>{{ stats.languages|length }}</b><span>languages: {{ stats.languages|map(attribute='language')|join(', ') }}</span></div>
   <div><b>{{ runs_total }}</b><span>runs recorded</span></div>
   <div><b>{{ n_done|num }}</b><span>model answers stored</span></div>
 </div>
@@ -62,7 +63,7 @@
       <thead><tr><th>Most common CWEs</th><th class="num">Samples</th></tr></thead>
       <tbody>{% for c in stats.cwes[:8] %}<tr><td><a href="/samples?cwe={{ c.cwe }}">{{ c.cwe }}</a></td><td class="num">{{ c.n }}</td></tr>{% endfor %}</tbody>
     </table></div>
-    <p class="small muted" style="margin-top:12px">Years {{ stats.years.lo }} to {{ stats.years.hi }}. Granularity: {% for g in stats.granularity %}{{ g.granularity }} {{ g.n }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+    <p class="small muted" style="margin-top:12px">{{ stats.projects|length }} projects, years {{ stats.years.lo }} to {{ stats.years.hi }}. Granularity: {% for g in stats.granularity %}{{ g.granularity }} {{ g.n }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
   </section>
 </div>
 {% endblock %}

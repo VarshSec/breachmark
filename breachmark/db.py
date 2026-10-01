@@ -7,22 +7,35 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator, List, Optional, Sequence, Union
 
-SCHEMA = """
+SCHEMA_HEAD = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+"""
 
-CREATE TABLE IF NOT EXISTS samples (
+SAMPLES_DDL = """
+CREATE TABLE IF NOT EXISTS {name} (
     id INTEGER PRIMARY KEY,
-    commit_hash TEXT NOT NULL UNIQUE,
+    dataset TEXT NOT NULL DEFAULT 'vulnsage',
+    sample_key TEXT NOT NULL,
+    commit_hash TEXT,
     cve TEXT, year INTEGER, cwe TEXT, category TEXT, description TEXT,
     vulnerable_code TEXT NOT NULL,
     patched_code TEXT NOT NULL,
     num_files INTEGER, num_functions INTEGER, lines_added INTEGER, lines_deleted INTEGER,
     project TEXT,
+    language TEXT NOT NULL DEFAULT 'C/C++',
+    function_name TEXT,
+    source_url TEXT,
     vuln_lines INTEGER, patch_lines INTEGER,
     vuln_chars INTEGER, patch_chars INTEGER,
     noise REAL, noise_reasoning TEXT,
-    granularity TEXT
+    granularity TEXT,
+    UNIQUE (dataset, sample_key)
 );
+"""
+
+SCHEMA_TAIL = """
+CREATE INDEX IF NOT EXISTS idx_samples_dataset ON samples(dataset);
+CREATE INDEX IF NOT EXISTS idx_samples_language ON samples(language);
 CREATE INDEX IF NOT EXISTS idx_samples_cwe ON samples(cwe);
 CREATE INDEX IF NOT EXISTS idx_samples_project ON samples(project);
 CREATE INDEX IF NOT EXISTS idx_samples_year ON samples(year);
@@ -112,7 +125,28 @@ class Database:
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self.tx() as conn:
             conn.execute("PRAGMA journal_mode=WAL")
-            conn.executescript(SCHEMA)
+            conn.executescript(SCHEMA_HEAD + SAMPLES_DDL.format(name="samples"))
+            self._migrate(conn)
+            conn.executescript(SCHEMA_TAIL)
+
+    @staticmethod
+    def _migrate(conn: sqlite3.Connection) -> None:
+        """Upgrade a samples table created before multi-dataset support (v0.1.0) in place."""
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(samples)")}
+        if "dataset" in cols:
+            return
+        conn.execute("PRAGMA foreign_keys=OFF")
+        conn.executescript(SAMPLES_DDL.format(name="samples_new"))
+        conn.execute(
+            "INSERT INTO samples_new (id, dataset, sample_key, commit_hash, cve, year, cwe, category, description, "
+            "vulnerable_code, patched_code, num_files, num_functions, lines_added, lines_deleted, project, language, "
+            "vuln_lines, patch_lines, vuln_chars, patch_chars, noise, noise_reasoning, granularity) "
+            "SELECT id, 'vulnsage', commit_hash, commit_hash, cve, year, cwe, category, description, vulnerable_code, "
+            "patched_code, num_files, num_functions, lines_added, lines_deleted, project, 'C/C++', vuln_lines, "
+            "patch_lines, vuln_chars, patch_chars, noise, noise_reasoning, granularity FROM samples")
+        conn.execute("DROP TABLE samples")
+        conn.execute("ALTER TABLE samples_new RENAME TO samples")
+        conn.execute("PRAGMA foreign_keys=ON")
 
     def q(self, sql: str, params: Sequence[Any] = ()) -> List[sqlite3.Row]:
         with self.tx() as conn:

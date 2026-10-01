@@ -22,10 +22,18 @@
   <header><h2>Data</h2></header>
   <dl class="kv">
     <dt>Database</dt><dd class="mono">{{ db_path }}</dd>
-    <dt>Dataset file</dt><dd class="mono">{{ dataset_path or 'not found' }}</dd>
     <dt>Samples loaded</dt><dd>{{ sample_count }}</dd>
   </dl>
-  <div class="actions" style="margin-top:12px"><button class="btn ghost" type="button" id="btn-import">Re-import dataset file</button><span class="hint">Updates sample metadata in place. Results are kept.</span></div>
+  <div class="table-wrap" style="margin-top:12px"><table class="tbl">
+  <thead><tr><th>Dataset</th><th class="num">Samples</th><th class="num">CWEs</th><th>Languages</th><th>Source</th></tr></thead>
+  <tbody>{% for d in datasets %}<tr><td>{{ d.dataset }}</td><td class="num">{{ d.n }}</td><td class="num">{{ d.cwes }}</td><td>{{ d.languages|join(', ') }}</td><td class="mono small">{{ d.path or '' }}</td></tr>{% else %}<tr><td colspan="5" class="muted">No samples loaded.</td></tr>{% endfor %}</tbody></table></div>
+  <h3 style="margin-top:18px">Import a dataset</h3>
+  <p class="small muted">Bundled: <b>vulnsage</b> (593 C/C++, VulnSage) and <b>sven</b> (803 C/C++ and Python, ETH Zurich) load automatically. To add <b>PrimeVul</b>, download its <code>*_paired.jsonl</code> files from the PrimeVul GitHub page (Google Drive link) and enter the file or folder path below.</p>
+  <div class="form-grid">
+    <div class="field"><label for="imp-format">Format</label><select id="imp-format">{% for f in formats %}<option value="{{ f }}">{{ f }}</option>{% endfor %}</select></div>
+    <div class="field" style="grid-column:span 2"><label for="imp-path">File or folder path</label><input type="text" id="imp-path" placeholder="leave empty for a bundled dataset, e.g. C:\Users\me\primevul\primevul_test_paired.jsonl"></div>
+  </div>
+  <div class="actions" style="margin-top:12px"><button class="btn ghost" type="button" id="btn-import">Import</button><span class="hint">Re-importing updates samples in place. Results are kept.</span></div>
 </section>
 
 <section class="section">

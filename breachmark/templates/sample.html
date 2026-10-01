@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}{{ s.cve or ('Sample ' ~ s.id) }} · BreachMark{% endblock %}
+{% block title %}{{ s.cve or s.function_name or ('Sample ' ~ s.id) }} · BreachMark{% endblock %}
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>{{ s.cve or ('Sample ' ~ s.id) }}</h1>
-    <p class="lede">{{ s.cwe or 'No CWE' }}{% if s.category %} ({{ s.category }}){% endif %} in {{ s.project }}, {{ s.year or 'year unknown' }}. {{ s.num_files }} file{{ '' if s.num_files == 1 else 's' }} and {{ s.num_functions }} function{{ '' if s.num_functions == 1 else 's' }} changed; granularity {{ s.granularity }}.</p>
+    <h1>{{ s.cve or s.function_name or ('Sample ' ~ s.id) }}</h1>
+    <p class="lede">{{ s.cwe or 'No CWE' }}{% if s.category %} ({{ s.category }}){% endif %} in {{ s.project or 'unknown project' }}{% if s.year %}, {{ s.year }}{% endif %}. {{ s.language }}, from the {{ s.dataset }} dataset. {{ s.num_files }} file{{ '' if s.num_files == 1 else 's' }} and {{ s.num_functions }} function{{ '' if s.num_functions == 1 else 's' }} changed; granularity {{ s.granularity }}.</p>
   </div>
   <div class="actions">
     {% if prev_id %}<a class="btn ghost" href="/samples/{{ prev_id }}">Previous</a>{% endif %}
@@ -15,8 +15,9 @@
 <div class="grid-2" style="margin-top:22px">
   <div>
     <dl class="kv">
-      <dt>Commit</dt><dd class="mono">{{ s.commit_hash }}</dd>
-      <dt>Commit message</dt><dd>{{ s.description or '(none)' }}</dd>
+      <dt>Commit</dt><dd class="mono">{% if s.source_url %}<a href="{{ s.source_url }}" rel="noopener">{{ s.commit_hash or s.source_url }}</a>{% else %}{{ s.commit_hash or 'n/a' }}{% endif %}</dd>
+      {% if s.function_name %}<dt>Function</dt><dd class="mono">{{ s.function_name }}</dd>{% endif %}
+      <dt>{{ 'Commit message' if s.dataset == 'vulnsage' else 'File' }}</dt><dd>{{ s.description or '(none)' }}</dd>
       <dt>Size</dt><dd>{{ s.vuln_lines }} lines vulnerable, {{ s.patch_lines }} lines patched ({{ s.lines_added }} added, {{ s.lines_deleted }} removed in the fix)</dd>
     </dl>
   </div>

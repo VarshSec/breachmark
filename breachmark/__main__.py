@@ -62,19 +62,30 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def cmd_import(args: argparse.Namespace) -> int:
     from .db import Database
-    from .importer import import_dataset
+    from .importer import import_any
     from .prompts import seed_prompts
     settings = config.get_settings()
-    path = Path(args.csv) if args.csv else settings.dataset_path
+    if args.csv:
+        path = Path(args.csv)
+    elif args.format == "vulnsage":
+        path = settings.dataset_path
+    elif args.format == "sven" and settings.dataset_path:
+        path = settings.dataset_path.parent / "sven"
+    else:
+        path = None
     if path is None:
-        print("No dataset file given and none found.")
+        print("Give the path to the dataset file or folder.")
         return 1
     db = Database(settings.db_path)
     db.init()
     seed_prompts(db)
-    result = import_dataset(db, path, replace=args.replace)
-    print(f"Imported {result['rows']} rows ({result['inserted']} new, {result['updated']} updated, "
-          f"{result['skipped']} skipped). {result['total']} samples in the database.")
+    try:
+        result = import_any(db, args.format, path, replace=args.replace)
+    except (ValueError, FileNotFoundError) as exc:
+        print(f"Import failed: {exc}")
+        return 1
+    print(f"{result['dataset']}: {result['rows']} rows ({result['inserted']} new, {result['updated']} updated). "
+          f"{result['in_dataset']} samples in this dataset, {result['total']} in the database.")
     return 0
 
 
@@ -93,7 +104,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     ensure_dataset(db, settings.dataset_path)
     spec = {"name": args.name, "provider": args.provider, "model": args.model, "strategies": args.strategies,
             "limit": args.limit, "shuffle_seed": args.seed,
-            "filters": {"cwe": args.cwe or "", "project": args.project or "", "max_noise": args.max_noise or ""},
+            "filters": {"cwe": args.cwe or "", "project": args.project or "", "max_noise": args.max_noise or "",
+                        "dataset": args.dataset or "", "language": args.language or ""},
             "options": {"concurrency": args.concurrency, "base_url": args.base_url, "judge": args.judge, "blind": args.blind,
                         "max_input_chars": args.max_input_chars}}
     try:
@@ -137,8 +149,9 @@ def main(argv=None) -> int:
     s.add_argument("--port", type=int)
     d = sub.add_parser("doctor", help="check the dataset, database and model servers")
     d.add_argument("providers", nargs="*", choices=["ollama", "openai", "anthropic"], help="which providers to test")
-    i = sub.add_parser("import", help="import a dataset CSV")
-    i.add_argument("csv", nargs="?")
+    i = sub.add_parser("import", help="import a dataset (vulnsage CSV, sven JSONL folder, primevul paired JSONL)")
+    i.add_argument("csv", nargs="?", metavar="PATH", help="file or folder; defaults to the bundled copy for vulnsage/sven")
+    i.add_argument("--format", default="vulnsage", choices=["vulnsage", "sven", "primevul"])
     i.add_argument("--replace", action="store_true", help="delete existing samples first")
     r = sub.add_parser("run", help="run a benchmark without the web UI")
     r.add_argument("--provider", default="ollama", choices=["ollama", "openai", "anthropic", "mock"])
@@ -147,6 +160,8 @@ def main(argv=None) -> int:
     r.add_argument("--limit", type=int)
     r.add_argument("--seed", type=int, default=1)
     r.add_argument("--cwe")
+    r.add_argument("--dataset", help="vulnsage, sven, primevul, ...")
+    r.add_argument("--language", help="C/C++, Python, ...")
     r.add_argument("--project")
     r.add_argument("--max-noise", dest="max_noise")
     r.add_argument("--concurrency", type=int)

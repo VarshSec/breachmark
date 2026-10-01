@@ -174,7 +174,7 @@
       return {
         name: val("name"), provider: val("provider"), model: val("model"),
         strategies: checked("strategy"), variants: checked("variant"),
-        filters: { cwe: val("f-cwe"), project: val("f-project"), granularity: val("f-granularity"),
+        filters: { cwe: val("f-cwe"), project: val("f-project"), granularity: val("f-granularity"), dataset: val("f-dataset"), language: val("f-language"),
                    year_min: val("f-year-min"), year_max: val("f-year-max"), max_noise: val("f-max-noise") },
         limit, shuffle_seed: $("#shuffle").checked ? (num(val("seed")) ?? 1) : null,
         options: { temperature: val("o-temperature"), max_tokens: val("o-max-tokens"), num_ctx: val("o-num-ctx"),
@@ -260,7 +260,10 @@
     const imp = $("#btn-import");
     if (imp) imp.addEventListener("click", async () => {
       imp.disabled = true;
-      try { const r = await api("/api/dataset/import", { method: "POST" }); toast(`Dataset refreshed: ${r.total} samples.`, "good"); setTimeout(() => location.reload(), 700); }
+      try {
+        const r = await api("/api/dataset/import", { method: "POST", body: { format: $("#imp-format").value, path: $("#imp-path").value.trim() } });
+        toast(`${r.dataset}: ${r.inserted} new, ${r.updated} updated. ${r.total} samples in total.`, "good"); setTimeout(() => location.reload(), 900);
+      }
       catch (e) { toast(e.message, "bad"); imp.disabled = false; }
     });
   }
@@ -299,7 +302,7 @@
       btn.disabled = true; out.replaceChildren(el("p", { class: "muted" }, el("span", { class: "spin" }), " Asking the model..."));
       try {
         const r = await api("/api/playground", { method: "POST", body: {
-          provider: val("provider"), model: val("model"), strategies, code: $("#code").value, cwe: val("cwe"),
+          provider: val("provider"), model: val("model"), strategies, code: $("#code").value, cwe: val("cwe"), language: val("language"),
           options: { base_url: val("base_url"), temperature: val("temperature"), max_tokens: val("max_tokens"), num_ctx: val("num_ctx") } } });
         out.replaceChildren();
         const s = r.summary;

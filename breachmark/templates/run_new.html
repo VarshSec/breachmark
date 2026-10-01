@@ -30,6 +30,8 @@
   <div class="form-section">
     <header><h3>Dataset slice</h3><p>Start small: 20 samples and one strategy is enough to check that a model is wired up correctly.</p></header>
     <div class="form-grid">
+      <div class="field"><label for="f-dataset">Dataset</label><select id="f-dataset"><option value="">All</option>{% for d in facets.datasets %}<option value="{{ d.dataset }}">{{ d.dataset }} ({{ d.n }})</option>{% endfor %}</select><span class="hint">Choose vulnsage to match the paper's setup.</span></div>
+      <div class="field"><label for="f-language">Language</label><select id="f-language"><option value="">All</option>{% for l in facets.languages %}<option value="{{ l.language }}">{{ l.language }} ({{ l.n }})</option>{% endfor %}</select></div>
       <div class="field"><label for="f-cwe">CWE</label><select id="f-cwe"><option value="">All</option>{% for c in facets.cwes %}<option value="{{ c.cwe }}">{{ c.cwe }} ({{ c.n }})</option>{% endfor %}</select></div>
       <div class="field"><label for="f-project">Project</label><select id="f-project"><option value="">All</option>{% for p in facets.projects %}<option value="{{ p.project }}">{{ p.project }} ({{ p.n }})</option>{% endfor %}</select></div>
       <div class="field"><label for="f-granularity">Granularity</label><select id="f-granularity"><option value="">All</option>{% for g in facets.granularity %}<option value="{{ g.granularity }}">{{ g.granularity }} ({{ g.n }})</option>{% endfor %}</select></div>

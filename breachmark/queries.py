@@ -14,6 +14,8 @@ SORTS = {
     "noise": "noise",
     "size": "vuln_chars",
     "project": "project",
+    "dataset": "dataset",
+    "language": "language",
 }
 
 
@@ -46,7 +48,8 @@ def build_where(filters: Dict[str, Any]) -> Tuple[str, List[Any]]:
             "OR category LIKE ? ESCAPE '\\' OR cwe LIKE ? ESCAPE '\\')"
         )
         params += [_like(q)] * 5
-    for field, column in (("cwe", "cwe"), ("project", "project"), ("granularity", "granularity")):
+    for field, column in (("cwe", "cwe"), ("project", "project"), ("granularity", "granularity"),
+                          ("dataset", "dataset"), ("language", "language")):
         values = _split(filters.get(field))
         if values:
             clauses.append(f"{column} IN ({','.join('?' * len(values))})")
@@ -88,7 +91,7 @@ def list_samples(db: Database, filters: Dict[str, Any], page: int = 1, per_page:
     page = max(1, page)
     rows = db.q(
         f"SELECT id, commit_hash, cve, year, cwe, category, project, num_files, num_functions, noise, "
-        f"granularity, vuln_chars, patch_chars FROM samples{where} "
+        f"granularity, vuln_chars, patch_chars, dataset, language, function_name FROM samples{where} "
         f"ORDER BY {column} {order}, id ASC LIMIT ? OFFSET ?",
         params + [per_page, (page - 1) * per_page],
     )
@@ -102,5 +105,7 @@ def facets(db: Database) -> Dict[str, Any]:
         "projects": db.q("SELECT project, COUNT(*) AS n FROM samples WHERE project IS NOT NULL GROUP BY project ORDER BY n DESC"),
         "granularity": db.q("SELECT granularity, COUNT(*) AS n FROM samples GROUP BY granularity ORDER BY granularity"),
         "years": db.q1("SELECT MIN(year) AS lo, MAX(year) AS hi FROM samples"),
+        "datasets": db.q("SELECT dataset, COUNT(*) AS n FROM samples GROUP BY dataset ORDER BY n DESC"),
+        "languages": db.q("SELECT language, COUNT(*) AS n FROM samples GROUP BY language ORDER BY n DESC"),
         "total": db.scalar("SELECT COUNT(*) FROM samples") or 0,
     }

@@ -2,7 +2,7 @@
 
 A benchmark for breach-grade bugs: compare large language models on real-world vulnerability detection, from a web dashboard.
 
-Every model is shown 593 real C/C++ vulnerabilities from the Linux kernel, Mozilla and Xen, twice each:
+Every model is shown real vulnerabilities from open-source projects (1,396 bundled: 593 C/C++ from the Linux kernel, Mozilla and Xen, plus 803 C/C++ and Python functions from the SVEN dataset), twice each:
 once as the vulnerable code (the right answer is YES) and once as the patched code (the right answer is NO).
 BreachMark runs the questions, stores every answer, and turns them into standings, confusion matrices, per-CWE
 heatmaps, majority-vote ensembles and exportable reports.
@@ -27,7 +27,8 @@ New here? Read [the plain-language explanation](docs/EXPLAINED-SIMPLY.md). Want 
   specificity on patched code, F1, ambiguity rate, latency, tokens and cost.
 - **Slice the results** by CWE, project, granularity, dataset noise and year.
 - **Majority vote** across runs to see whether an ensemble beats the best single model.
-- **Browse the dataset** with filters and a diff view of each fix.
+- **Browse the datasets** with filters (dataset, language, CWE, project, year, size, noise) and a diff view of each fix.
+- **Two datasets bundled, more importable**: VulnSage and SVEN load automatically; PrimeVul's paired files import from the Settings page or the command line. Runs can be restricted to one dataset or language, and every breakdown includes dataset and language.
 - **Playground**: paste your own code or a public GitHub commit URL and ask a model about it.
 - **Edit prompts**: the four built-in strategies are versioned templates; add your own.
 - **Export** CSV for any run or comparison, and a standalone HTML report.
@@ -47,7 +48,7 @@ pip install -r requirements.txt
 python -m breachmark
 ```
 
-Open http://127.0.0.1:8000. The dataset is imported automatically on first start. Click **Run the demo** on
+Open http://127.0.0.1:8000. The bundled datasets are imported automatically on first start. Click **Run the demo** on
 the dashboard to fill the app with synthetic results, or go to **Runs → New run** to use a real model.
 
 ### With Ollama
@@ -83,7 +84,8 @@ python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies
 python -m breachmark run --provider openai --model gpt-4o-mini --cwe CWE-119 --concurrency 4
 python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies think_verify --limit 40 --blind
 python -m breachmark doctor            # dataset, database and provider checks
-python -m breachmark import other.csv  # load a different dataset with the same columns
+python -m breachmark import --format primevul C:\path\primevul_test_paired.jsonl   # add PrimeVul
+python -m breachmark run --provider ollama --model qwen2.5-coder:7b --dataset sven --language Python --limit 40
 ```
 
 Results from command-line runs show up in the web app too.
@@ -96,6 +98,16 @@ docker run -p 8000:8000 -v breachmark-data:/data \
   --add-host=host.docker.internal:host-gateway -e OLLAMA_HOST=http://host.docker.internal:11434 breachmark
 ```
 
+## Datasets
+
+| Name | Samples | Languages | What it is | License |
+|---|---|---|---|---|
+| `vulnsage` | 593 | C/C++ | File- and function-level vulnerabilities from Linux, Mozilla and Xen, 491 CVEs, 52 CWEs, with noise ratings (Zibaeirad & Vieira, 2025) | CC BY 4.0 |
+| `sven` | 803 | C/C++, Python | Function-level vulnerable/fixed pairs over 9 CWEs, curated from CrossVul, BigVul and VUDENC (He & Vechev, CCS 2023) | MIT |
+| `primevul` | your copy | C/C++ | Deduplicated, chronologically split function pairs with CVE and CWE labels (Ding et al., 2024). Download the `*_paired.jsonl` files from the PrimeVul repository and import them | see their repo |
+
+Both bundled sets are in `data/` with their licenses. Pick a dataset in the run form (choose `vulnsage` to reproduce the paper's setup) or mix them; results are broken down by dataset and language. Other datasets with vulnerable/fixed pairs can be added with a small importer in `breachmark/importer.py`.
+
 ## How a run works
 
 1. You pick a provider and model, one or more prompt strategies, and a slice of the dataset (filters, a sample
@@ -103,7 +115,7 @@ docker run -p 8000:8000 -v breachmark-data:/data \
 2. For each sample, each strategy and each variant (vulnerable, patched) a task is created. Tasks run with the
    concurrency you chose, with retries and exponential backoff on transient errors. If ten tasks in a row fail,
    the run stops with the error shown, instead of burning through the dataset.
-3. Each answer is parsed for a final `VERDICT: YES` or `VERDICT: NO` line (reasoning traces in `<think>` tags
+3. The prompt names the sample's language (C/C++, Python, ...) and, unless blind mode is on, its CWE. Each answer is parsed for a final `VERDICT: YES` or `VERDICT: NO` line (reasoning traces in `<think>` tags
    are ignored). If no verdict is found the answer is recorded as ambiguous, which counts as wrong. Optionally a
    judge model can be asked to read unclear answers.
 4. Long code blocks are shortened in the middle to fit the input limit (default 40,000 characters) and the
@@ -153,7 +165,8 @@ breachmark/
   export.py        CSV export
   templates/       server-rendered pages
   static/          one stylesheet, one script, bundled fonts
-data/vulnerabilities.csv   the dataset (CC BY 4.0, see data/README.md)
+data/vulnerabilities.csv   VulnSage dataset (CC BY 4.0)
+data/sven/                 SVEN dataset (MIT); data/README.md has both attributions
 tests/             pytest suite (runs offline against the mock provider and fake HTTP servers)
 ```
 
@@ -172,7 +185,9 @@ python -m pytest -q
 
 BreachMark's code is © 2026 Varshit Sharma and released under the MIT License (see `LICENSE`; third-party notices in `NOTICE.md`).
 
-The dataset and the four prompting strategies come from **Reasoning with LLMs for Zero-Shot Vulnerability
+The SVEN dataset is from **Large Language Models for Code: Security Hardening and Adversarial Testing** (He & Vechev, CCS 2023), MIT-licensed at [github.com/eth-sri/sven](https://github.com/eth-sri/sven).
+
+The VulnSage dataset and the four prompting strategies come from **Reasoning with LLMs for Zero-Shot Vulnerability
 Detection** by Arastoo Zibaeirad and Marco Vieira (2025), whose code and data are published at
 [github.com/Erroristotle/VulnSage](https://github.com/Erroristotle/VulnSage) under MIT (code) and CC BY 4.0
 (dataset). BreachMark is an independent tool built on that dataset; it shares no code with VulnSage. If you

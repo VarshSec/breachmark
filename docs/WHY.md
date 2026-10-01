@@ -15,7 +15,7 @@ Meanwhile, the bugs that matter are not textbook examples. They are a missing bo
 
 ## What BreachMark does about it
 
-- Ships a curated set of 593 real vulnerabilities from Linux, Mozilla and Xen, with the fixed version of each, from a peer-reviewed study.
+- Ships two curated sets of real vulnerabilities (1,396 in total, C/C++ and Python) with the fixed version of each, from peer-reviewed studies, and imports a third (PrimeVul).
 - Always asks the trick question: every bug is tested as broken code and as fixed code, and a model gets credit only when it answers both correctly.
 - Runs the whole exam automatically against any model you can reach (local through Ollama, or any API), with retries, resumption and a live progress view.
 - Reports the numbers that matter: how often the model catches real bugs, how often it raises false alarms on safe code, how often it refuses to commit, with confidence intervals, broken down by bug type.

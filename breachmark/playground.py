@@ -40,6 +40,7 @@ async def run_playground(db: Database, manager: RunManager, spec: Dict[str, Any]
     opts["max_retries"] = min(opts["max_retries"], 1)
     prompts = _resolve_prompts(db, spec)
     cwe = clean_cwe(spec.get("cwe"))
+    language = re.sub(r"[^A-Za-z0-9+#/ .-]", "", str(spec.get("language") or "C/C++"))[:30] or "C/C++"
     code_in, truncated, _ = apply_input_policy(code.replace("\r\n", "\n"), opts["max_input_chars"],
                                                "truncate" if opts["input_policy"] == "skip" else opts["input_policy"])
     provider = manager.provider_factory(provider_name, base_url=opts.get("base_url"), timeout=float(opts["timeout"]))
@@ -47,7 +48,7 @@ async def run_playground(db: Database, manager: RunManager, spec: Dict[str, Any]
     async def one(p: Any) -> Dict[str, Any]:
         tpl = db.q1("SELECT template, key, version FROM prompts WHERE id=?", (p["id"],))
         label = tpl["key"] if tpl["version"] == 1 else f"{tpl['key']}@v{tpl['version']}"
-        prompt = render_prompt(tpl["template"], code_in, cwe)
+        prompt = render_prompt(tpl["template"], code_in, cwe, language=language)
         started = time.perf_counter()
         try:
             gen = await manager._call(provider, model, prompt, opts, RunControl())
@@ -63,7 +64,7 @@ async def run_playground(db: Database, manager: RunManager, spec: Dict[str, Any]
     finally:
         await provider.aclose()
     votes = [r["verdict"] for r in results if r["verdict"] is not None]
-    return {"results": results, "truncated": truncated, "cwe": cwe or "any security vulnerability",
+    return {"results": results, "truncated": truncated, "cwe": cwe or "any security vulnerability", "language": language,
             "summary": {"yes": votes.count(1), "no": votes.count(0), "ambiguous": votes.count(AMBIGUOUS),
                         "errors": sum(1 for r in results if r["verdict"] is None)}}
 

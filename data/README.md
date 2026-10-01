@@ -1,4 +1,6 @@
-# Dataset
+# Datasets
+
+## vulnerabilities.csv (VulnSage)
 
 `vulnerabilities.csv` is the VulnSage dataset, unchanged, from
 https://github.com/Erroristotle/VulnSage (directory `vulnerability_dataset/database/`).
@@ -15,6 +17,17 @@ the security fix.
 
 BreachMark reads this file on first start and keeps a copy in its SQLite database. You can
 point it at another CSV with the same columns by setting `BREACHMARK_DATASET`.
+
+## sven/ (SVEN)
+
+The `data_train_val` files from https://github.com/eth-sri/sven, MIT License, SRI Lab, ETH Zurich. 803
+vulnerable/fixed function pairs in C/C++ and Python over nine CWEs. See `sven/README.md` for details and citation.
+Imported automatically on first start as dataset `sven`.
+
+## PrimeVul (not bundled)
+
+Download the `*_paired.jsonl` files from https://github.com/DLVulDet/PrimeVul (Google Drive link in its README)
+and import with `python -m breachmark import --format primevul <file-or-folder>` or from the Settings page.
 
 If you use this data, cite:
 

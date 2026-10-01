@@ -14,11 +14,11 @@ from conftest import DATASET, run_to_end
 
 # ---------------- importer ----------------
 def test_import_is_idempotent(db):
-    assert db.scalar("SELECT COUNT(*) FROM samples") == 593
+    assert db.scalar("SELECT COUNT(*) FROM samples WHERE dataset='vulnsage'") == 593
     second = import_dataset(db, DATASET)
-    assert second == {"rows": 593, "inserted": 0, "updated": 593, "skipped": 0, "total": 593}
-    assert db.scalar("SELECT COUNT(DISTINCT cwe) FROM samples") == 52
-    assert db.scalar("SELECT COUNT(DISTINCT cve) FROM samples") == 491
+    assert (second["rows"], second["inserted"], second["updated"]) == (593, 0, 593)
+    assert db.scalar("SELECT COUNT(DISTINCT cwe) FROM samples WHERE dataset='vulnsage'") == 52
+    assert db.scalar("SELECT COUNT(DISTINCT cve) FROM samples WHERE dataset='vulnsage'") == 491
     assert db.scalar("SELECT COUNT(*) FROM samples WHERE vuln_lines < 1") == 0
 
 

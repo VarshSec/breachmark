@@ -5,7 +5,7 @@ import pytest
 
 from breachmark import runner
 from breachmark.db import Database
-from breachmark.importer import import_dataset
+from breachmark.importer import import_dataset, import_sven
 from breachmark.prompts import seed_prompts
 
 DATASET = Path(__file__).resolve().parent.parent / "data" / "vulnerabilities.csv"
@@ -22,6 +22,7 @@ def db(tmp_path):
     database.init()
     seed_prompts(database)
     import_dataset(database, DATASET)
+    import_sven(database, DATASET.parent / "sven")
     return database
 
 

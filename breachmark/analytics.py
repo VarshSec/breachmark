@@ -32,7 +32,7 @@ def fetch_rows(db: Database, run_ids: Sequence[int]) -> List[Row]:
     rows = db.q(
         f"SELECT r.run_id, r.sample_id, r.strategy, r.variant, r.expected, r.status, r.verdict, r.correct, "
         f"r.latency_ms, r.prompt_tokens, r.completion_tokens, r.truncated, "
-        f"s.cwe, s.project, s.year, s.noise, s.granularity "
+        f"s.cwe, s.project, s.year, s.noise, s.granularity, s.dataset, s.language "
         f"FROM results r JOIN samples s ON s.id = r.sample_id WHERE r.run_id IN ({marks}) AND r.status != 'pending'",
         list(run_ids))
     return [dict(r) for r in rows]

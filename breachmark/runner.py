@@ -170,7 +170,7 @@ class RunManager:
 
     async def _process(self, run: Any, opts: Dict[str, Any], provider: Provider, ctl: RunControl, result_id: int) -> None:
         row = self.db.q1(
-            "SELECT r.id, r.variant, r.expected, r.strategy, p.template, s.cwe, s.project, s.category, "
+            "SELECT r.id, r.variant, r.expected, r.strategy, p.template, s.cwe, s.project, s.category, s.language, "
             "CASE WHEN r.variant='vuln' THEN s.vulnerable_code ELSE s.patched_code END AS code "
             "FROM results r JOIN samples s ON s.id=r.sample_id JOIN prompts p ON p.id=r.prompt_id WHERE r.id=?",
             (result_id,))
@@ -183,7 +183,7 @@ class RunManager:
                        len(code), now_iso(), result_id))
             return
         cwe = None if opts.get("blind") else row["cwe"]
-        prompt = render_prompt(row["template"], code, cwe, row["project"] or "", row["category"] or "")
+        prompt = render_prompt(row["template"], code, cwe, row["project"] or "", row["category"] or "", row["language"] or "C/C++")
         started = time.perf_counter()
         try:
             gen = await self._call(provider, run["model"], prompt, opts, ctl)

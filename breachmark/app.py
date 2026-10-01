@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Any, Callable, Dict, List, Optional
 
@@ -15,7 +16,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from . import __version__, analytics, config, queries, runs as runs_mod
 from .db import Database
 from .diffview import diff_rows
-from .importer import ensure_dataset, import_dataset
+from .importer import FORMATS, dataset_summary, ensure_dataset, import_any, import_dataset
 from .playground import fetch_commit_diff, run_playground
 from .prompts import render_prompt, save_prompt_version, seed_prompts, validate_template
 from .providers import PROVIDER_CLASSES, make_provider, provider_info
@@ -139,10 +140,10 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
 
     @app.get("/samples", response_class=HTMLResponse)
     def samples_page(request: Request, q: str = "", cwe: str = "", project: str = "", granularity: str = "",
-                     year_min: str = "", year_max: str = "", max_noise: str = "", page_no: int = 1, sort: str = "id",
-                     dir: str = "asc"):
+                     year_min: str = "", year_max: str = "", max_noise: str = "", dataset: str = "", language: str = "",
+                     page_no: int = 1, sort: str = "id", dir: str = "asc"):
         filters = {"q": q, "cwe": cwe, "project": project, "granularity": granularity, "year_min": year_min,
-                   "year_max": year_max, "max_noise": max_noise}
+                   "year_max": year_max, "max_noise": max_noise, "dataset": dataset, "language": language}
         result = queries.list_samples(db, filters, page=page_no, sort=sort, direction=dir)
         return page(request, "samples.html", "samples", filters=filters, result=result, facets=queries.facets(db),
                     sort=sort, dir=dir)
@@ -192,6 +193,8 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
         return page(request, "run.html", "runs", run=run, progress=progress, by_strategy=by_strategy,
                     strategies=strategies, focus=focus, costs=costs,
                     heatmap=analytics.cwe_heatmap(rows), breakdowns={
+                        "Dataset": analytics.breakdown(focus_rows, "dataset"),
+                        "Language": analytics.breakdown(focus_rows, "language"),
                         "Project": analytics.breakdown(focus_rows, "project"),
                         "Granularity": analytics.breakdown(focus_rows, "granularity"),
                         "Noise in dataset label": analytics.breakdown(focus_rows, "noise"),
@@ -238,7 +241,9 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
                     focus_id=focus_id, focus_strats=focus_strats, strat=strat, ensembles=ensembles,
                     heatmap=analytics.cwe_heatmap(focus_rows) if focus_rows else None,
                     confusion={e["strategy"]: e["confusion"] for e in board if e["run_id"] == focus_id},
-                    breakdowns={"Project": analytics.breakdown(strat_rows, "project"),
+                    breakdowns={"Dataset": analytics.breakdown(strat_rows, "dataset"),
+                                "Language": analytics.breakdown(strat_rows, "language"),
+                                "Project": analytics.breakdown(strat_rows, "project"),
                                 "Granularity": analytics.breakdown(strat_rows, "granularity"),
                                 "Noise in dataset label": analytics.breakdown(strat_rows, "noise"),
                                 "Year": analytics.breakdown(strat_rows, "year")} if strat_rows else {})
@@ -261,7 +266,7 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
     @app.get("/settings", response_class=HTMLResponse)
     def settings_page(request: Request):
         return page(request, "settings.html", "settings", providers=provider_info(), settings=settings,
-                    sample_count=db.scalar("SELECT COUNT(*) FROM samples") or 0,
+                    sample_count=db.scalar("SELECT COUNT(*) FROM samples") or 0, datasets=dataset_summary(db), formats=FORMATS,
                     dataset_path=db.get_meta("dataset_path") or str(settings.dataset_path or ""),
                     db_path=db.path)
 
@@ -380,7 +385,7 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
 
     @app.get("/api/results/{result_id}")
     def api_result(result_id: int):
-        r = db.q1("SELECT r.*, u.model, u.provider, u.options, s.cwe, s.project, s.category, s.cve, "
+        r = db.q1("SELECT r.*, u.model, u.provider, u.options, s.cwe, s.project, s.category, s.cve, s.language, "
                   "CASE WHEN r.variant='vuln' THEN s.vulnerable_code ELSE s.patched_code END AS code, p.template "
                   "FROM results r JOIN runs u ON u.id=r.run_id JOIN samples s ON s.id=r.sample_id "
                   "JOIN prompts p ON p.id=r.prompt_id WHERE r.id=?", (result_id,))
@@ -390,7 +395,7 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
         from .prompts import apply_input_policy
         opts = _json.loads(r["options"] or "{}")
         code, _, _ = apply_input_policy(r["code"], opts.get("max_input_chars"), opts.get("input_policy", "truncate"))
-        prompt = render_prompt(r["template"], code, None if opts.get("blind") else r["cwe"], r["project"] or "", r["category"] or "")
+        prompt = render_prompt(r["template"], code, None if opts.get("blind") else r["cwe"], r["project"] or "", r["category"] or "", r["language"] or "C/C++")
         return {"id": r["id"], "cve": r["cve"], "cwe": r["cwe"], "model": r["model"], "strategy": r["strategy"],
                 "variant": r["variant"], "expected": r["expected"], "verdict": r["verdict"], "correct": r["correct"],
                 "status": r["status"], "parse_method": r["parse_method"], "error": r["error"], "response": r["response"],
@@ -425,17 +430,17 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
     @app.post("/api/prompts/preview")
     def api_preview_prompt(body: Dict[str, Any] = Body(...)):
         template = body.get("template") or ""
-        s = db.q1("SELECT cwe, project, category, vulnerable_code FROM samples WHERE id=?", (int(body.get("sample_id") or 4),)) \
-            or db.q1("SELECT cwe, project, category, vulnerable_code FROM samples ORDER BY id LIMIT 1")
+        s = db.q1("SELECT cwe, project, category, vulnerable_code, language FROM samples WHERE id=?", (int(body.get("sample_id") or 4),)) \
+            or db.q1("SELECT cwe, project, category, vulnerable_code, language FROM samples ORDER BY id LIMIT 1")
         code = (s["vulnerable_code"][:600] + "\n/* ... */") if s else "int main(void) { return 0; }"
-        return {"rendered": render_prompt(template, code, s["cwe"] if s else "CWE-119"),
+        return {"rendered": render_prompt(template, code, s["cwe"] if s else "CWE-119", language=s["language"] if s else "C/C++"),
                 "warnings": validate_template(template)}
 
     @app.post("/api/playground")
     async def api_playground(body: Dict[str, Any] = Body(...)):
         try:
             return await run_playground(db, manager, {k: body.get(k) for k in
-                                                      ("provider", "model", "strategies", "prompt_ids", "code", "cwe", "options")})
+                                                      ("provider", "model", "strategies", "prompt_ids", "code", "cwe", "language", "options")})
         except ValueError as exc:
             raise bad(str(exc))
 
@@ -459,13 +464,30 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
         return {"ids": ids}
 
     @app.post("/api/dataset/import")
-    def api_import():
-        path = settings.dataset_path
+    def api_import(body: Dict[str, Any] = Body(default={})):
+        fmt = (body.get("format") or "vulnsage").strip().lower()
+        raw_path = (body.get("path") or "").strip()
+        if fmt not in FORMATS:
+            raise bad(f"Unknown format. Choose one of: {', '.join(FORMATS)}")
+        if raw_path:
+            path = Path(raw_path).expanduser()
+        elif fmt == "vulnsage":
+            path = settings.dataset_path
+        elif fmt == "sven" and settings.dataset_path:
+            path = settings.dataset_path.parent / "sven"
+        else:
+            path = None
         if path is None:
-            raise bad("No dataset file found. Set BREACHMARK_DATASET or put data/vulnerabilities.csv next to the app.")
+            raise bad("Enter the path to the dataset file or folder.")
         try:
-            return import_dataset(db, path)
+            return import_any(db, fmt, path, replace=bool(body.get("replace")))
         except (ValueError, FileNotFoundError) as exc:
             raise bad(str(exc))
+        except Exception as exc:  # malformed JSON, encoding problems, ...
+            raise bad(f"Import failed: {type(exc).__name__}: {str(exc)[:200]}")
+
+    @app.get("/api/datasets")
+    def api_datasets():
+        return dataset_summary(db)
 
     return app

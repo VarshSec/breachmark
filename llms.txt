@@ -3,12 +3,12 @@
 > BreachMark is a benchmark and web dashboard for measuring how well large language models (LLMs) detect real-world security vulnerabilities in code. It is NOT a vulnerability scanner; it evaluates the models that people might use as scanners.
 
 Repository: https://github.com/VarshSec/breachmark
-Author: Varshit Sharma (https://github.com/VarshSec). License: MIT (code). Dataset: CC BY 4.0, from VulnSage.
+Author: Varshit Sharma (https://github.com/VarshSec). License: MIT (code). Datasets: VulnSage (CC BY 4.0), SVEN (MIT).
 Language: Python 3.10+. Stack: FastAPI, SQLite, httpx, Jinja2, vanilla JS. No build step, no Node.
 
 ## What it does
 
-- Tests any LLM on 593 real C/C++ vulnerabilities (491 CVEs, 52 CWE categories, 2002-2019) from the Linux kernel, Mozilla and Xen.
+- Tests any LLM on real vulnerabilities. Bundled: `vulnsage` (593 C/C++ samples, 491 CVEs, 52 CWEs, from Linux, Mozilla, Xen) and `sven` (803 C/C++ and Python function pairs, 9 CWEs). `primevul` can be imported from the user's own copy of its *_paired.jsonl files. Runs can be filtered by dataset and language.
 - Each vulnerability is tested twice: the vulnerable code (correct answer YES) and the patched code (correct answer NO). This penalises models that call everything vulnerable.
 - Four prompting strategies: baseline (bare YES/NO), cot (chain of thought), think (reasoning block + assessment), think_verify (findings with confidence scores, then a verification pass). All end with a "VERDICT: YES/NO" line that is parsed by regex; "<think>" reasoning traces are stripped first.
 - Model providers: Ollama (local), any OpenAI-compatible endpoint (OpenAI, Groq, DeepSeek, OpenRouter, LM Studio, vLLM, Gemini's OpenAI endpoint), Anthropic, and a deterministic mock provider for demos and tests.
@@ -25,7 +25,7 @@ Language: Python 3.10+. Stack: FastAPI, SQLite, httpx, Jinja2, vanilla JS. No bu
 
 - It does not scan repositories or produce findings for your own project (the Playground is a single-input convenience only).
 - It does not include results from real models in the repository; results are produced by running it.
-- It only ships a C/C++ dataset. Other CSVs with the same columns can be imported.
+- Bundled data is C/C++ and Python only. New datasets need a small importer (see breachmark/importer.py: read_* functions produce rows upserted by (dataset, sample_key)).
 - By default the prompts tell the model which CWE to look for, following the original paper. Blind mode (run option `blind`, CLI `--blind`) hides the CWE and asks about "any security vulnerability" instead; runs are marked "blind" in the standings so the two are not mixed up.
 
 ## Quick commands
@@ -35,7 +35,8 @@ Language: Python 3.10+. Stack: FastAPI, SQLite, httpx, Jinja2, vanilla JS. No bu
     python -m breachmark doctor [ollama|openai|anthropic]   # check dataset, database and provider connections
     python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies baseline think_verify --limit 40
     python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies think_verify --limit 40 --blind   # no CWE hint
-    python -m breachmark import path/to/other.csv
+    python -m breachmark import --format primevul path/to/primevul_test_paired.jsonl
+    python -m breachmark run --provider ollama --model qwen2.5-coder:7b --dataset sven --language Python --limit 40
     python -m pytest -q                       # 52 tests, fully offline
 
 Environment variables: BREACHMARK_DB, BREACHMARK_DATASET, BREACHMARK_HOST, BREACHMARK_PORT, BREACHMARK_ALLOWED_HOSTS, OLLAMA_HOST, OPENAI_BASE_URL, OPENAI_API_KEY (or BREACHMARK_API_KEY), ANTHROPIC_BASE_URL, ANTHROPIC_API_KEY. A .env file in the working directory is read on start.
@@ -49,17 +50,17 @@ Environment variables: BREACHMARK_DB, BREACHMARK_DATASET, BREACHMARK_HOST, BREAC
 - breachmark/prompts.py: built-in templates, render_prompt (single-pass placeholder fill, brace-safe), apply_input_policy (middle truncation with marker), prompt versioning.
 - breachmark/parsing.py: parse_verdict -> (1 yes | 0 no | 2 ambiguous, method), parse_judge, strip_thinking.
 - breachmark/analytics.py: compute_metrics, wilson, leaderboard, breakdown, cwe_heatmap, ensemble_rows, cost_estimate.
-- breachmark/importer.py: CSV -> SQLite, idempotent upsert by commit hash, derives granularity, counts real code lines.
-- breachmark/queries.py: sample filtering (q, cwe, project, granularity, year range, noise, size) with escaped LIKE.
+- breachmark/importer.py: importers for vulnsage (CSV), sven (JSONL dir) and primevul (paired JSONL); idempotent upsert by (dataset, sample_key); derives granularity and language; counts real code lines. dataset_summary() lists what is loaded.
+- breachmark/queries.py: sample filtering (q, cwe, project, granularity, dataset, language, year range, noise, size) with escaped LIKE.
 - breachmark/diffview.py, playground.py, export.py, db.py (schema: meta, samples, prompts, runs, results), config.py.
 - breachmark/templates/*.html, breachmark/static/app.css, app.js, static/fonts (Bricolage Grotesque, IBM Plex Sans; OFL).
-- data/vulnerabilities.csv: the dataset. data/README.md: its license and citation.
+- data/vulnerabilities.csv (VulnSage, CC BY 4.0) and data/sven/ (SVEN, MIT): bundled datasets; data/README.md has licenses and citations.
 - tests/: test_core.py, test_providers.py (fake HTTP servers via httpx.MockTransport), test_app.py (FastAPI TestClient).
 - docs/WHY.md: the real-world problem. docs/EXPLAINED-SIMPLY.md: plain-language explanation. NOTICE.md: third-party notices.
 
 ## Data model (SQLite)
 
-samples(id, commit_hash, cve, year, cwe, category, description, vulnerable_code, patched_code, num_files, num_functions, lines_added, lines_deleted, project, vuln_lines, patch_lines, vuln_chars, patch_chars, noise, noise_reasoning, granularity)
+samples(id, dataset, sample_key, commit_hash, cve, year, cwe, category, description, vulnerable_code, patched_code, num_files, num_functions, lines_added, lines_deleted, project, language, function_name, source_url, vuln_lines, patch_lines, vuln_chars, patch_chars, noise, noise_reasoning, granularity; UNIQUE(dataset, sample_key)). Databases created by v0.1.0 are migrated in place on start.
 prompts(id, key, version, name, description, template, builtin, created_at)
 runs(id, name, provider, model, options JSON, filters JSON, status pending|running|paused|completed|failed|cancelled, error, total_tasks, created_at, started_at, finished_at)
 results(id, run_id, sample_id, variant vuln|patch, prompt_id, strategy, expected 1|0, status pending|done|error|skipped, verdict 1|0|2, correct, parse_method verdict|final|label|bare|judge|none, response, error, latency_ms, input_chars, truncated, prompt_tokens, completion_tokens, finished_at)
@@ -70,4 +71,6 @@ On this dataset, ten local open models (7B-70B) averaged about 37% on vulnerable
 
 ## Attribution
 
-Dataset and the four prompting-strategy ideas: "Reasoning with LLMs for Zero-Shot Vulnerability Detection", Arastoo Zibaeirad and Marco Vieira, 2025, arXiv:2503.17885, https://github.com/Erroristotle/VulnSage (code MIT, dataset CC BY 4.0). BreachMark shares no code with VulnSage; its prompt wording is original.
+SVEN dataset: "Large Language Models for Code: Security Hardening and Adversarial Testing", Jingxuan He and Martin Vechev, ACM CCS 2023, https://github.com/eth-sri/sven (MIT).
+
+VulnSage dataset and the four prompting-strategy ideas: "Reasoning with LLMs for Zero-Shot Vulnerability Detection", Arastoo Zibaeirad and Marco Vieira, 2025, arXiv:2503.17885, https://github.com/Erroristotle/VulnSage (code MIT, dataset CC BY 4.0). BreachMark shares no code with VulnSage; its prompt wording is original.

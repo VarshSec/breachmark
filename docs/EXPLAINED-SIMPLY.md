@@ -12,7 +12,7 @@ AI chatbots can read computer code. Lots of people now ask them "is this code sa
 
 If you want to know whether a student is good at spotting mistakes, you give them a test with known answers. BreachMark does that for AI models.
 
-The test questions are **593 real security bugs** that were found in big, famous software: the Linux operating system, the Firefox browser, and Xen (used in cloud servers). For each bug we have two pieces of code:
+The test questions are **about 1,400 real security bugs** found in real open-source software: the Linux operating system, the Firefox browser, Xen (used in cloud servers), and hundreds of smaller C and Python projects. For each bug we have two pieces of code:
 
 - the **broken** version, with the bug in it
 - the **fixed** version, after the developers repaired it
@@ -56,4 +56,4 @@ Companies are starting to let AI review their code for security. If the AI misse
 
 ## Where the bugs came from
 
-The 593 bugs were collected by two researchers (Arastoo Zibaeirad and Marco Vieira) for a 2025 study called VulnSage, and they shared the data openly. BreachMark uses that data with credit and builds a tool around it so anyone can repeat and extend their experiment.
+593 of the bugs were collected by two researchers (Arastoo Zibaeirad and Marco Vieira) for a 2025 study called VulnSage; 803 more come from SVEN, a 2023 ETH Zurich study by Jingxuan He and Martin Vechev. Both teams shared their data openly. BreachMark uses it with credit and builds a tool around it so anyone can repeat and extend their experiments.

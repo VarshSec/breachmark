@@ -14,7 +14,7 @@ from .db import Database, now_iso
 
 ANY_CWE = "any security vulnerability"
 
-_CODE_BLOCK = "Code:\n```c\n{code}\n```"
+_CODE_BLOCK = "Code:\n```\n{code}\n```"
 _VERDICT_LINE = (
     "Finish with one last line in exactly this form, answering YES if {cwe} is present "
     "and NO if it is not:\nVERDICT: <YES or NO>"
@@ -26,7 +26,7 @@ BUILTIN_PROMPTS: List[Dict[str, str]] = [
         "name": "Baseline",
         "description": "Direct YES/NO answer with no explanation.",
         "template": (
-            "You are a security expert reviewing C/C++ source code.\n\n"
+            "You are a security expert reviewing {language} source code.\n\n"
             "Does the code below contain {cwe}?\n\n"
             + _CODE_BLOCK
             + "\n\nAnswer with exactly one word, YES or NO. Do not explain."
@@ -37,7 +37,7 @@ BUILTIN_PROMPTS: List[Dict[str, str]] = [
         "name": "Chain of thought",
         "description": "Step-by-step analysis followed by a verdict line.",
         "template": (
-            "You are a security expert reviewing C/C++ source code for {cwe}.\n\n"
+            "You are a security expert reviewing {language} source code for {cwe}.\n\n"
             "Analyse the code step by step before you decide:\n"
             "1. Structure: list the functions, memory operations and data flows that matter for {cwe}.\n"
             "2. Patterns: point out constructs that can lead to {cwe}, and any checks or guards that prevent it.\n"
@@ -53,7 +53,7 @@ BUILTIN_PROMPTS: List[Dict[str, str]] = [
         "name": "Think",
         "description": "Explicit <thinking> and <assessment> sections.",
         "template": (
-            "You are a security expert reviewing C/C++ source code for {cwe}.\n\n"
+            "You are a security expert reviewing {language} source code for {cwe}.\n\n"
             "Reason inside a <thinking> block first:\n"
             "- Locate places where {cwe} could occur.\n"
             "- Consider how an attacker would try to reach each place.\n"
@@ -71,7 +71,7 @@ BUILTIN_PROMPTS: List[Dict[str, str]] = [
         "name": "Think & verify",
         "description": "Analysis with confidence scores, then a verification pass.",
         "template": (
-            "You are a security expert running a multi-phase review of C/C++ source code for {cwe}.\n\n"
+            "You are a security expert running a multi-phase review of {language} source code for {cwe}.\n\n"
             "Phase 1, analysis. In a <thinking> block, examine the code for {cwe}, describe the attack "
             "paths you considered and note anything you are unsure about. In a <findings> block, list each "
             "suspected instance with evidence from the code. In a <confidence> block, give each finding a "
@@ -88,12 +88,14 @@ BUILTIN_PROMPTS: List[Dict[str, str]] = [
     },
 ]
 
-_PLACEHOLDER = re.compile(r"\{(cwe|code|project|category)\}")
+_PLACEHOLDER = re.compile(r"\{(cwe|code|project|category|language)\}")
 
 
-def render_prompt(template: str, code: str, cwe: Optional[str] = None, project: str = "", category: str = "") -> str:
+def render_prompt(template: str, code: str, cwe: Optional[str] = None, project: str = "", category: str = "",
+                  language: str = "C/C++") -> str:
     """Fill placeholders in a single pass, so braces in the code are never interpreted."""
-    values = {"cwe": cwe or ANY_CWE, "code": code, "project": project or "", "category": category or ""}
+    values = {"cwe": cwe or ANY_CWE, "code": code, "project": project or "", "category": category or "",
+              "language": language or "source"}
     return _PLACEHOLDER.sub(lambda m: values[m.group(1)], template)
 
 
@@ -104,6 +106,8 @@ def validate_template(template: str) -> List[str]:
         problems.append("The template must contain the {code} placeholder.")
     if "{cwe}" not in template:
         problems.append("The template has no {cwe} placeholder, so the CWE will not be mentioned.")
+    if "{language}" not in template:
+        problems.append("The template has no {language} placeholder, so the model will not be told the language.")
     if "verdict" not in template.lower() and "yes" not in template.lower():
         problems.append("Ask the model to end with a line like 'VERDICT: YES' or 'VERDICT: NO' so answers can be parsed.")
     return problems
@@ -137,12 +141,19 @@ def strategy_label(key: str, version: int) -> str:
 
 
 def seed_prompts(db: Database) -> None:
-    """Insert built-in prompts. If a built-in's text changed in code, add it as a new version."""
+    """Insert built-in prompts. If a built-in's text changed in code: update it in place when no result
+    refers to it yet, otherwise add it as a new version so old results keep their exact prompt."""
     for p in BUILTIN_PROMPTS:
-        latest = db.q1("SELECT version, template FROM prompts WHERE key=? ORDER BY version DESC LIMIT 1", (p["key"],))
+        latest = db.q1("SELECT id, version, template, builtin FROM prompts WHERE key=? ORDER BY version DESC LIMIT 1",
+                       (p["key"],))
         if latest is None:
             version = 1
         elif latest["template"] != p["template"]:
+            used = db.scalar("SELECT COUNT(*) FROM results WHERE prompt_id=?", (latest["id"],))
+            if latest["builtin"] and not used:
+                db.x("UPDATE prompts SET template=?, name=?, description=? WHERE id=?",
+                     (p["template"], p["name"], p["description"], latest["id"]))
+                continue
             version = latest["version"] + 1
         else:
             continue
