@@ -10,7 +10,7 @@ Meanwhile, the bugs that matter are not textbook examples. They are a missing bo
 
 1. **You need real bugs with known answers.** Made-up examples are too easy. Real ones require digging through years of security fixes in big projects and confirming which commit fixed what.
 2. **You need the trick question.** If you only show a model buggy code, a model that says "vulnerable" to everything scores 100%. You must also show it the fixed code and check it says "safe". Most informal tests skip this and reach wrong conclusions.
-3. **You need volume.** One model, four ways of asking, 593 bugs, two versions each: nearly 5,000 questions. Models time out, crash, give answers that can't be parsed. Doing this by hand, or with a throwaway script, means lost results and numbers you can't reproduce.
+3. **You need volume.** One model, four ways of asking, 1,400 bugs, two versions each: over 11,000 questions. Models time out, crash, give answers that can't be parsed. Doing this by hand, or with a throwaway script, means lost results and numbers you can't reproduce.
 4. **You need to read the result properly.** "70% accurate" hides whether the model catches bugs or just avoids false alarms, which bug types it misses, and whether 70% on 40 samples means anything at all.
 
 ## What BreachMark does about it
