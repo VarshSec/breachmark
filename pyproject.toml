@@ -9,6 +9,8 @@ description = "Benchmark and compare LLMs on real-world vulnerability detection,
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [{ name = "Varshit Sharma" }]
+urls = { Homepage = "https://github.com/VarshSec/breachmark" }
 dependencies = ["fastapi>=0.110,<1", "uvicorn>=0.27,<1", "httpx>=0.27,<1", "jinja2>=3.1,<4"]
 
 [project.optional-dependencies]

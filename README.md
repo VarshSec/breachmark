@@ -157,7 +157,7 @@ python -m pytest -q
 
 ## Credits and license
 
-BreachMark's code is released under the MIT License.
+BreachMark's code is © 2026 Varshit Sharma and released under the MIT License (see `LICENSE`).
 
 The dataset and the four prompting strategies come from **Reasoning with LLMs for Zero-Shot Vulnerability
 Detection** by Arastoo Zibaeirad and Marco Vieira (2025), whose code and data are published at
