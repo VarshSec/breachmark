@@ -17,6 +17,8 @@ It was built by [Varshit Sharma](https://github.com/VarshSec), a security engine
 
 Status: v0.1, working end to end, tested offline with a mock provider and against simulated Ollama, OpenAI and Anthropic APIs. Real-model runs are the next step; results and issues are welcome.
 
+New here? Read [the plain-language explanation](docs/EXPLAINED-SIMPLY.md). Want the why? Read [the problem it solves](docs/WHY.md). Pointing an AI assistant at this repo? It should read [`llms.txt`](llms.txt).
+
 ## What you can do
 
 - **Run benchmarks** against Ollama (local models), any OpenAI-compatible server (OpenAI, LM Studio, vLLM,
