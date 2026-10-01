@@ -56,7 +56,7 @@ Environment variables: BREACHMARK_DB, BREACHMARK_DATASET, BREACHMARK_HOST, BREAC
 - breachmark/templates/*.html, breachmark/static/app.css, app.js, static/fonts (Bricolage Grotesque, IBM Plex Sans; OFL).
 - data/vulnerabilities.csv (VulnSage, CC BY 4.0) and data/sven/ (SVEN, MIT): bundled datasets; data/README.md has licenses and citations.
 - tests/: test_core.py, test_providers.py (fake HTTP servers via httpx.MockTransport), test_app.py (FastAPI TestClient).
-- docs/WHY.md: the real-world problem. docs/EXPLAINED-SIMPLY.md: plain-language explanation. NOTICE.md: third-party notices.
+- docs/WHY.md: the real-world problem. docs/EXPLAINED-SIMPLY.md: plain-language explanation. docs/RESEARCH-PLAYBOOK.md: how to run a study (research questions, protocol, statistics, write-up). docs/*.pdf: the same plus a Windows running guide. NOTICE.md: third-party notices.
 
 ## Data model (SQLite)
 
