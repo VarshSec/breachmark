@@ -108,6 +108,10 @@ docker run -p 8000:8000 -v breachmark-data:/data \
 
 The two bundled sets are in `data/` with their licenses; PrimeVul must be added by you. Pick a dataset in the run form (choose `vulnsage` to reproduce the paper's setup) or mix them; results are broken down by dataset and language. Other datasets with vulnerable/fixed pairs can be added with a small importer in `breachmark/importer.py`.
 
+![A run page: metrics per strategy, confusion matrix, per-CWE heatmap](docs/run.png)
+
+*A run page. Scores are from the built-in synthetic model, which answers at coin-flip level; real models fill in the same tables.*
+
 ## How a run works
 
 1. You pick a provider and model, one or more prompt strategies, and a slice of the dataset (filters, a sample
