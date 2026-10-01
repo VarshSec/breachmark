@@ -26,7 +26,7 @@ Language: Python 3.10+. Stack: FastAPI, SQLite, httpx, Jinja2, vanilla JS. No bu
 - It does not scan repositories or produce findings for your own project (the Playground is a single-input convenience only).
 - It does not include results from real models in the repository; results are produced by running it.
 - It only ships a C/C++ dataset. Other CSVs with the same columns can be imported.
-- The prompts tell the model which CWE to look for, following the original paper. A "blind" mode without the CWE hint is a planned feature.
+- By default the prompts tell the model which CWE to look for, following the original paper. Blind mode (run option `blind`, CLI `--blind`) hides the CWE and asks about "any security vulnerability" instead; runs are marked "blind" in the standings so the two are not mixed up.
 
 ## Quick commands
 
@@ -34,6 +34,7 @@ Language: Python 3.10+. Stack: FastAPI, SQLite, httpx, Jinja2, vanilla JS. No bu
     python -m breachmark                      # web app at http://127.0.0.1:8000, dataset auto-imported on first start
     python -m breachmark doctor [ollama|openai|anthropic]   # check dataset, database and provider connections
     python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies baseline think_verify --limit 40
+    python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies think_verify --limit 40 --blind   # no CWE hint
     python -m breachmark import path/to/other.csv
     python -m pytest -q                       # 52 tests, fully offline
 
@@ -43,7 +44,7 @@ Environment variables: BREACHMARK_DB, BREACHMARK_DATASET, BREACHMARK_HOST, BREAC
 
 - breachmark/app.py: FastAPI pages (/, /samples, /samples/{id}, /runs, /runs/new, /runs/{id}, /runs/{id}/report, /compare, /playground, /prompts, /settings) and JSON API under /api (docs at /api/docs). Mutating API calls require an "X-BreachMark" header (CSRF guard).
 - breachmark/runner.py: RunManager, async workers, retries with backoff, pause/resume/cancel, circuit breaker, crash recovery.
-- breachmark/runs.py: run creation, option validation (temperature, max_tokens, num_ctx, max_input_chars, input_policy truncate|skip|none, concurrency, retries, timeout, judge, base_url, prices), progress, estimates.
+- breachmark/runs.py: run creation, option validation (temperature, max_tokens, num_ctx, max_input_chars, input_policy truncate|skip|none, concurrency, retries, timeout, judge, blind, base_url, prices), progress, estimates.
 - breachmark/providers/: base.py (Provider, ProviderError, GenResult), ollama.py, openai_compat.py, anthropic.py, mock.py, __init__.py (registry, make_provider).
 - breachmark/prompts.py: built-in templates, render_prompt (single-pass placeholder fill, brace-safe), apply_input_policy (middle truncation with marker), prompt versioning.
 - breachmark/parsing.py: parse_verdict -> (1 yes | 0 no | 2 ambiguous, method), parse_judge, strip_thinking.

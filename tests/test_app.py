@@ -102,3 +102,19 @@ def test_playground_and_providers(client):
     assert client.post("/api/providers/nope/ping", json={}, headers=H).status_code == 404
     assert client.post("/api/providers/openai/key", json={"key": "sk-1"}, headers=H).json()["key_source"] == "session"
     assert client.post("/api/providers/openai/key", json={"key": ""}, headers=H).json()["key_source"] == "missing"
+
+
+def test_blind_mode_hides_cwe(client):
+    normal = client.post("/api/runs", json={"provider": "mock", "model": "mock-balanced", "strategies": ["cot"],
+                                            "limit": 3, "shuffle_seed": 1}, headers=H).json()["id"]
+    blind = client.post("/api/runs", json={"provider": "mock", "model": "mock-balanced", "strategies": ["cot"],
+                                           "limit": 3, "shuffle_seed": 1, "options": {"blind": True}}, headers=H).json()["id"]
+    wait_done(client, normal)
+    wait_done(client, blind)
+    p_normal = client.get(f"/api/results/{client.get(f'/api/runs/{normal}/results').json()['rows'][0]['id']}").json()["prompt"]
+    p_blind = client.get(f"/api/results/{client.get(f'/api/runs/{blind}/results').json()['rows'][0]['id']}").json()["prompt"]
+    assert "CWE-" in p_normal
+    assert "CWE-" not in p_blind and "any security vulnerability" in p_blind
+    page = client.get(f"/runs/{blind}")
+    assert b"blind" in page.content
+    assert b"blind: no CWE hint" not in client.get(f"/runs/{normal}").content

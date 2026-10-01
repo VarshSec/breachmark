@@ -182,7 +182,8 @@ class RunManager:
                       (f"Input of {len(code)} characters exceeds the limit of {opts.get('max_input_chars')}.",
                        len(code), now_iso(), result_id))
             return
-        prompt = render_prompt(row["template"], code, row["cwe"], row["project"] or "", row["category"] or "")
+        cwe = None if opts.get("blind") else row["cwe"]
+        prompt = render_prompt(row["template"], code, cwe, row["project"] or "", row["category"] or "")
         started = time.perf_counter()
         try:
             gen = await self._call(provider, run["model"], prompt, opts, ctl)

@@ -179,7 +179,7 @@
         limit, shuffle_seed: $("#shuffle").checked ? (num(val("seed")) ?? 1) : null,
         options: { temperature: val("o-temperature"), max_tokens: val("o-max-tokens"), num_ctx: val("o-num-ctx"),
                    max_input_chars: val("o-max-input"), input_policy: val("o-policy"), concurrency: val("o-concurrency"),
-                   max_retries: val("o-retries"), timeout: val("o-timeout"), judge: $("#o-judge").checked,
+                   max_retries: val("o-retries"), timeout: val("o-timeout"), judge: $("#o-judge").checked, blind: $("#o-blind").checked,
                    judge_model: val("o-judge-model"), base_url: val("base_url"),
                    price_in: val("o-price-in"), price_out: val("o-price-out") },
       };

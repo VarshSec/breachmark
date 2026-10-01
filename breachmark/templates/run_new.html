@@ -51,6 +51,7 @@
       <div class="field"><label for="name">Run name</label><input type="text" id="name" placeholder="optional"></div>
       <div class="field"><label for="o-concurrency">Parallel requests</label><input type="number" id="o-concurrency" min="1" max="64" placeholder=""><span class="hint">Keep at 1 for Ollama on one GPU.</span></div>
       <div class="field"><label for="o-max-input">Input limit (characters)</label><input type="number" id="o-max-input" value="{{ defaults.max_input_chars }}" min="0"><span class="hint">0 means no limit. The largest sample is about 253k characters.</span></div>
+      <div class="field" style="grid-column:1/-1"><label class="check"><input type="checkbox" id="o-blind"><span><b>Blind mode: don't tell the model which CWE to look for</b><span class="hint">The prompt asks about "any security vulnerability" instead of naming the CWE. Harder and closer to real code review; compare with a normal run to see how much the hint helps.</span></span></label></div>
       <div class="field"><label for="o-policy">When input is too long</label><select id="o-policy"><option value="truncate">Shorten it (keep start and end)</option><option value="skip">Skip the sample</option><option value="none">Send it anyway</option></select></div>
     </div>
     <details class="adv" style="margin-top:14px"><summary>Advanced</summary>

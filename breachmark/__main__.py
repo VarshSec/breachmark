@@ -36,7 +36,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     try:
         db = Database(settings.db_path)
         db.init()
-        print(f"Samples in database: {db.scalar('SELECT COUNT(*) FROM samples') or 0}")
+        n = db.scalar('SELECT COUNT(*) FROM samples') or 0
+        print(f"Samples in database: {n}" + (" (the dataset is imported automatically on the first serve or run)" if n == 0 and settings.dataset_path else ""))
     except Exception as exc:
         print(f"Database error: {exc}")
         ok = False
@@ -93,7 +94,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     spec = {"name": args.name, "provider": args.provider, "model": args.model, "strategies": args.strategies,
             "limit": args.limit, "shuffle_seed": args.seed,
             "filters": {"cwe": args.cwe or "", "project": args.project or "", "max_noise": args.max_noise or ""},
-            "options": {"concurrency": args.concurrency, "base_url": args.base_url, "judge": args.judge,
+            "options": {"concurrency": args.concurrency, "base_url": args.base_url, "judge": args.judge, "blind": args.blind,
                         "max_input_chars": args.max_input_chars}}
     try:
         run_id = create_run(db, spec)
@@ -152,6 +153,7 @@ def main(argv=None) -> int:
     r.add_argument("--base-url", dest="base_url")
     r.add_argument("--max-input-chars", dest="max_input_chars", type=int)
     r.add_argument("--judge", action="store_true")
+    r.add_argument("--blind", action="store_true", help="do not tell the model which CWE to look for")
     r.add_argument("--name")
     args = parser.parse_args(argv)
     if args.cmd in (None, "serve"):

@@ -390,7 +390,7 @@ def create_app(db_path: Optional[str] = None, provider_factory: Optional[Callabl
         from .prompts import apply_input_policy
         opts = _json.loads(r["options"] or "{}")
         code, _, _ = apply_input_policy(r["code"], opts.get("max_input_chars"), opts.get("input_policy", "truncate"))
-        prompt = render_prompt(r["template"], code, r["cwe"], r["project"] or "", r["category"] or "")
+        prompt = render_prompt(r["template"], code, None if opts.get("blind") else r["cwe"], r["project"] or "", r["category"] or "")
         return {"id": r["id"], "cve": r["cve"], "cwe": r["cwe"], "model": r["model"], "strategy": r["strategy"],
                 "variant": r["variant"], "expected": r["expected"], "verdict": r["verdict"], "correct": r["correct"],
                 "status": r["status"], "parse_method": r["parse_method"], "error": r["error"], "response": r["response"],

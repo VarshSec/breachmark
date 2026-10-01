@@ -81,6 +81,7 @@ so only do this on a network you trust, or put it behind a reverse proxy with au
 ```bash
 python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies baseline cot --limit 20
 python -m breachmark run --provider openai --model gpt-4o-mini --cwe CWE-119 --concurrency 4
+python -m breachmark run --provider ollama --model qwen2.5-coder:7b --strategies think_verify --limit 40 --blind
 python -m breachmark doctor            # dataset, database and provider checks
 python -m breachmark import other.csv  # load a different dataset with the same columns
 ```
@@ -120,7 +121,9 @@ The four built-in strategies follow the zero-shot prompting styles studied in th
 | `think` | Reason inside a `<thinking>` block, then give an `<assessment>` with severity |
 | `think_verify` | Analyse with confidence scores, verify high-confidence findings, then assess |
 
-The wording is BreachMark's own and every template ends by asking for a verdict line. Saving a prompt creates a new
+The wording is BreachMark's own and every template ends by asking for a verdict line.
+
+By default the prompt names the CWE to look for, as in the paper. Tick **Blind mode** on the run form (or pass `--blind` on the command line) to hide it: the model is then asked about "any security vulnerability", which is harder and closer to real code review. Blind runs are labelled in the standings. Running the same model both ways shows how much the hint is worth. Saving a prompt creates a new
 version; results keep pointing at the version that produced them, so old and new runs stay comparable.
 
 ## Metrics

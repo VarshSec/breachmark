@@ -23,6 +23,7 @@ DEFAULT_OPTIONS: Dict[str, Any] = {
     "max_retries": 3,
     "timeout": 300,
     "judge": False,
+    "blind": False,           # hide the CWE from the prompt
     "judge_model": None,
     "base_url": None,
     "price_in": None,          # optional USD per 1M tokens, for cost estimates
@@ -59,6 +60,7 @@ def normalize_options(provider: str, raw: Optional[Dict[str, Any]]) -> Dict[str,
         raise ValueError(f"input_policy must be one of {', '.join(INPUT_POLICIES)}.")
     opts["input_policy"] = policy
     opts["judge"] = bool(raw.get("judge"))
+    opts["blind"] = bool(raw.get("blind"))
     opts["judge_model"] = (raw.get("judge_model") or "").strip() or None
     base_url = (raw.get("base_url") or "").strip()
     if base_url and not base_url.lower().startswith(("http://", "https://")):

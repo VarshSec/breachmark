@@ -27,7 +27,7 @@
     {% for e in board %}
     <li class="standing">
       <span class="rank">{{ loop.index }}</span>
-      <span class="who"><b><a href="/runs/{{ e.run_id }}">{{ e.model }}</a>{% if e.provider == 'mock' %} <span class="badge mock">synthetic</span>{% endif %}</b><span>{{ e.strategy }} · {{ e.n }} answers</span></span>
+      <span class="who"><b><a href="/runs/{{ e.run_id }}">{{ e.model }}</a>{% if e.provider == 'mock' %} <span class="badge mock">synthetic</span>{% endif %}{% if e.blind %} <span class="badge">blind</span>{% endif %}</b><span>{{ e.strategy }} · {{ e.n }} answers</span></span>
       <span class="score"><span class="bar"><i style="--w:{{ (e.accuracy or 0) * 100 }}%"></i></span><b>{{ e.accuracy|pct }}</b></span>
       <span class="stat">{{ e.tpr|pct(0) }}<small>recall</small></span>
       <span class="stat">{{ e.tnr|pct(0) }}<small>specificity</small></span>

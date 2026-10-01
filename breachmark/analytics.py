@@ -107,7 +107,8 @@ def leaderboard(db: Database, run_ids: Optional[Sequence[int]] = None, sort: str
         if m["n"] == 0:
             continue
         entries.append({"run_id": rid, "run_name": run["name"], "provider": run["provider"], "model": run["model"],
-                        "status": run["status"], "strategy": strategy, "cost": cost_estimate(run, m), **m})
+                        "status": run["status"], "strategy": strategy, "cost": cost_estimate(run, m),
+                        "blind": bool(run["options"].get("blind")), **m})
     entries.sort(key=lambda e: (e.get(sort) is None, -(e.get(sort) or 0), e["run_id"], e["strategy"]))
     return entries
 

@@ -5,7 +5,7 @@
 <div id="run-root" data-run-id="{{ run.id }}" data-status="{{ run.status }}">
 <div class="page-head">
   <div><h1>{{ run.name }}</h1>
-    <p class="lede">{{ run.model }} via {{ run.provider }}{% if run.provider == 'mock' %} <span class="badge mock">synthetic answers</span>{% endif %}. Created {{ run.created_at|dt }}{% if run.finished_at %}, finished {{ run.finished_at|dt }}{% endif %}.</p></div>
+    <p class="lede">{{ run.model }} via {{ run.provider }}{% if run.provider == 'mock' %} <span class="badge mock">synthetic answers</span>{% endif %}{% if run.options.blind %} <span class="badge">blind: no CWE hint</span>{% endif %}. Created {{ run.created_at|dt }}{% if run.finished_at %}, finished {{ run.finished_at|dt }}{% endif %}.</p></div>
   <div class="actions">
     {% if active_run %}<button class="btn ghost" type="button" data-run-action="pause">Pause</button><button class="btn danger" type="button" data-run-action="cancel" data-confirm="Cancel this run? Finished answers are kept.">Cancel</button>
     {% else %}
@@ -44,6 +44,7 @@
     {% if run.provider == 'ollama' %}<dt>Context window</dt><dd>{{ run.options.num_ctx }} tokens</dd>{% endif %}
     <dt>Input limit</dt><dd>{{ run.options.max_input_chars or 'none' }} characters, {{ run.options.input_policy }}</dd>
     <dt>Parallel requests</dt><dd>{{ run.options.concurrency }}</dd>
+    <dt>CWE hint</dt><dd>{{ 'hidden (blind mode)' if run.options.blind else 'given in the prompt' }}</dd>
     <dt>Judge</dt><dd>{{ 'yes, ' ~ (run.options.judge_model or 'same model') if run.options.judge else 'no' }}</dd>
     <dt>Filters</dt><dd class="mono">{{ run.filters|tojson }}</dd>
   </dl>
