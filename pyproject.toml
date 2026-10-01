@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "breachmark"
+version = "0.1.0"
+description = "Benchmark and compare LLMs on real-world vulnerability detection, with a web dashboard."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["fastapi>=0.110,<1", "uvicorn>=0.27,<1", "httpx>=0.27,<1", "jinja2>=3.1,<4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+breachmark = "breachmark.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["breachmark*"]
+
+[tool.setuptools.package-data]
+breachmark = ["templates/*.html", "static/*", "static/fonts/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

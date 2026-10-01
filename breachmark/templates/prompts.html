@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Prompts · BreachMark{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Prompts</h1><p class="lede">Every strategy is a template with <code>{cwe}</code> and <code>{code}</code> placeholders. Saving creates a new version; old results keep pointing at the version they used.</p></div></div>
+
+{% for key, versions in groups.items() %}
+{% set latest = versions[0] %}
+<section class="section">
+  <header><h2>{{ latest.name }}</h2><p><span class="mono">{{ key }}</span>{% if latest.builtin %} · built in{% endif %} · latest is v{{ latest.version }} · {{ versions|length }} version{{ '' if versions|length == 1 else 's' }}</p></header>
+  <p class="muted small">{{ latest.description }}</p>
+  <div class="code"><pre>{{ latest.template }}</pre></div>
+  <div class="actions" style="margin-top:10px">
+    <button class="btn ghost sm" type="button" data-edit="{{ key }}" data-name="{{ latest.name }}" data-desc="{{ latest.description or '' }}" data-template="{{ latest.template }}">Make a new version</button>
+    {% if versions|length > 1 %}<details><summary class="small">Older versions</summary>{% for v in versions[1:] %}<h3 style="margin:12px 0 6px">v{{ v.version }} <span class="muted small">{{ v.created_at|dt }}</span></h3><div class="code"><pre>{{ v.template }}</pre></div>{% endfor %}</details>{% endif %}
+  </div>
+</section>
+{% endfor %}
+
+<section class="section">
+  <header><h2 id="p-title">New prompt</h2></header>
+  <form id="prompt-form" class="panel">
+    <div class="form-grid">
+      <div class="field"><label for="p-key">Key</label><input type="text" id="p-key" placeholder="e.g. socratic"><span class="hint">Letters, digits and underscores. Reusing a key adds a version to it.</span></div>
+      <div class="field"><label for="p-name">Name</label><input type="text" id="p-name" required></div>
+      <div class="field" style="grid-column:1/-1"><label for="p-desc">Description</label><input type="text" id="p-desc"></div>
+      <div class="field" style="grid-column:1/-1"><label for="p-template">Template</label><textarea id="p-template" rows="14" required></textarea>
+        <span class="hint">End with an instruction like: Finish with one last line in exactly this form: VERDICT: &lt;YES or NO&gt;</span></div>
+    </div>
+    <div class="actions" style="margin-top:14px"><button class="btn primary" type="submit">Save as new version</button><button class="btn ghost" type="button" id="p-preview-btn">Preview with a real sample</button><button class="btn ghost" type="button" id="p-reset">Reset</button></div>
+    <div id="p-preview" hidden style="margin-top:14px"><div id="p-warnings"></div><div class="code"><pre id="p-preview-text"></pre></div></div>
+  </form>
+</section>
+{% endblock %}

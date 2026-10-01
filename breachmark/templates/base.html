@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}BreachMark{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232f3fd0' d='M12 2 3 6v6c0 5 4 9 9 10 5-1 9-5 9-10V6z'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <a class="brand" href="/">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 6v6c0 5 4 9 9 10 5-1 9-5 9-10V6z"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke-linecap="round"/></svg>
+      BreachMark
+    </a>
+    <nav aria-label="Main">
+      {% for href, key, label in [("/", "dashboard", "Dashboard"), ("/samples", "samples", "Dataset"), ("/runs", "runs", "Runs"), ("/compare", "compare", "Compare"), ("/playground", "playground", "Playground"), ("/prompts", "prompts", "Prompts"), ("/settings", "settings", "Settings")] %}
+      <a href="{{ href }}" {% if active == key %}aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="rail-foot">BreachMark {{ version }}<br>Dataset from VulnSage (CC BY 4.0)</div>
+  </aside>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<dialog id="modal">
+  <div class="modal-head"><h3 id="modal-title">Result</h3><button class="btn ghost sm" data-close type="button">Close</button></div>
+  <div id="modal-body"></div>
+</dialog>
+<div id="toasts" aria-live="polite"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

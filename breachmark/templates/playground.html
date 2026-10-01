@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Playground · BreachMark{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Playground</h1><p class="lede">Paste a function, a file or a diff and ask one model about it with any of the strategies. Nothing here is stored.</p></div></div>
+<script type="application/json" id="providers-json">{{ providers|tojson }}</script>
+<form id="pg-form" style="margin-top:24px">
+  <div class="form-section">
+    <header><h3>Code</h3><p>Or load the diff of a public GitHub commit.</p></header>
+    <div>
+      <div class="row" style="margin-bottom:10px"><input type="text" id="commit-url" placeholder="https://github.com/owner/repo/commit/sha" style="flex:1"><button class="btn ghost" type="button" id="btn-commit">Load diff</button></div>
+      <textarea id="code" rows="16" placeholder="int copy(char *dst, const char *src) { strcpy(dst, src); }" required></textarea>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="field"><label for="cwe">Look for</label><input type="text" id="cwe" placeholder="e.g. CWE-119, or leave empty for any vulnerability"></div>
+      </div>
+    </div>
+  </div>
+  <div class="form-section">
+    <header><h3>Model</h3></header>
+    <div class="form-grid">
+      <div class="field"><label for="provider">Provider</label><select id="provider">{% for p in providers %}<option value="{{ p.name }}">{{ p.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="base_url">Server URL</label><input type="text" id="base_url" placeholder=""></div>
+      <div class="field" style="grid-column:1/-1"><label for="model">Model</label><input type="text" id="model" list="models" required><datalist id="models"></datalist><span class="hint" id="model-status"></span></div>
+      <div class="notice warn" id="key-warning" hidden style="grid-column:1/-1">No API key is set for this provider. Add one on the <a href="/settings">Settings</a> page.</div>
+      <div class="field"><label for="temperature">Temperature</label><input type="number" id="temperature" value="{{ defaults.temperature }}" step="0.1" min="0" max="2"></div>
+      <div class="field"><label for="max_tokens">Max output tokens</label><input type="number" id="max_tokens" value="{{ defaults.max_tokens }}" min="16"></div>
+      <div class="field"><label for="num_ctx">Ollama context window</label><input type="number" id="num_ctx" value="{{ defaults.num_ctx }}" min="512"></div>
+    </div>
+  </div>
+  <div class="form-section">
+    <header><h3>Strategies</h3></header>
+    <div class="form-grid">
+      {% for p in prompts %}<label class="check"><input type="checkbox" name="strategy" value="{{ p.key }}" {% if p.key in ['baseline','think_verify'] %}checked{% endif %}><span>{{ p.name }}{% if p.version > 1 %} <span class="badge">v{{ p.version }}</span>{% endif %}</span></label>{% endfor %}
+    </div>
+  </div>
+  <div class="form-section"><header></header><div><button class="btn primary" type="submit" id="btn-run">Ask the model</button></div></div>
+</form>
+<div id="pg-results" class="section"></div>
+{% endblock %}

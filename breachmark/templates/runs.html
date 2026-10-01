@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Runs · BreachMark{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Runs</h1><p class="lede">A run asks one model, with one or more prompt strategies, about a chosen slice of the dataset. Runs can be paused, resumed and retried; nothing is lost if the app stops.</p></div>
+<div class="actions"><a class="btn primary" href="/runs/new">New run</a>{% if not items %}<button class="btn ghost" type="button" data-demo>Run the demo</button>{% endif %}</div></div>
+{% if items %}
+<div class="table-wrap" style="margin-top:24px"><table class="tbl">
+<thead><tr><th>Run</th><th>Model</th><th>Status</th><th>Progress</th><th class="num">Created</th></tr></thead>
+<tbody>
+{% for r in items %}
+<tr data-live-run="{{ r.id }}" data-status="{{ r.status }}">
+  <td><a href="/runs/{{ r.id }}">{{ r.name }}</a></td>
+  <td>{{ r.model }}<div class="sub">{{ r.provider }}{% if r.provider == 'mock' %} · <span class="badge mock">synthetic</span>{% endif %}</div></td>
+  <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+  <td style="min-width:200px"><div class="progress {{ r.status }}"><i data-progress-bar style="--w:{{ r.progress.percent }}%"></i></div><div class="sub" data-progress-text>{{ r.progress.finished }} of {{ r.progress.total }} ({{ r.progress.percent }}%){% if r.progress.counts.error %}, {{ r.progress.counts.error }} failed{% endif %}</div></td>
+  <td class="num nowrap small muted">{{ r.created_at|dt }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+<div class="empty" style="margin-top:24px"><h3>No runs yet</h3><p>Create one, or run the demo to fill the app with synthetic results.</p></div>
+{% endif %}
+{% endblock %}

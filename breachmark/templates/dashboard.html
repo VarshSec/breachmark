@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Which model finds real vulnerabilities?</h1>
+    <p class="lede">Every model is shown the same {{ stats.total }} real C/C++ vulnerabilities twice: once as the vulnerable code, once as the patched version. A model earns credit only when it says YES to the first and NO to the second.</p>
+  </div>
+  <div class="actions">
+    <a class="btn primary" href="/runs/new">New run</a>
+    {% if runs_total == 0 %}<button class="btn ghost" type="button" data-demo>Try a demo with synthetic models</button>{% endif %}
+  </div>
+</div>
+
+<div class="facts">
+  <div><b>{{ stats.total }}</b><span>vulnerability samples</span></div>
+  <div><b>{{ stats.cwes|length }}</b><span>CWE categories</span></div>
+  <div><b>{{ stats.projects|length }}</b><span>projects: {{ stats.projects|map(attribute='project')|join(', ') }}</span></div>
+  <div><b>{{ runs_total }}</b><span>runs recorded</span></div>
+  <div><b>{{ n_done|num }}</b><span>model answers stored</span></div>
+</div>
+
+<section class="section">
+  <header><h2>Standings</h2><p>Best accuracy per model and strategy, across all runs. <a href="/compare">Compare runs in detail</a>.</p></header>
+  {% if board %}
+  <ol class="standings">
+    <li class="head"><span></span><span>Model</span><span>Accuracy</span><span class="num">Finds vuln</span><span class="num">Clears patch</span><span class="num">Unsure</span></li>
+    {% for e in board %}
+    <li class="standing">
+      <span class="rank">{{ loop.index }}</span>
+      <span class="who"><b><a href="/runs/{{ e.run_id }}">{{ e.model }}</a>{% if e.provider == 'mock' %} <span class="badge mock">synthetic</span>{% endif %}</b><span>{{ e.strategy }} · {{ e.n }} answers</span></span>
+      <span class="score"><span class="bar"><i style="--w:{{ (e.accuracy or 0) * 100 }}%"></i></span><b>{{ e.accuracy|pct }}</b></span>
+      <span class="stat">{{ e.tpr|pct(0) }}<small>recall</small></span>
+      <span class="stat">{{ e.tnr|pct(0) }}<small>specificity</small></span>
+      <span class="stat">{{ e.ambiguous_rate|pct(0) }}<small>ambiguous</small></span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty"><h3>No results yet</h3><p>Start a run against Ollama or an API, or try the demo to see how the standings, heatmaps and reports look.</p>
+    <p class="actions" style="justify-content:center;margin-top:12px"><a class="btn primary" href="/runs/new">New run</a><button class="btn ghost" type="button" data-demo>Run the demo</button></p></div>
+  {% endif %}
+</section>
+
+<div class="grid-2">
+  <section class="section">
+    <header><h2>Recent runs</h2><p><a href="/runs">All runs</a></p></header>
+    {% if recent %}
+    <div class="table-wrap"><table class="tbl">
+      <thead><tr><th>Run</th><th>Status</th><th>Progress</th></tr></thead>
+      <tbody>
+      {% for r in recent %}
+      <tr><td><a href="/runs/{{ r.id }}">{{ r.name }}</a><div class="sub">{{ r.model }} · {{ r.provider }}</div></td>
+          <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+          <td><div class="progress {{ r.status }}"><i style="--w:{{ r.progress.percent }}%"></i></div><div class="sub">{{ r.progress.finished }} of {{ r.progress.total }}</div></td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    {% else %}<p class="muted">Nothing has been run yet.</p>{% endif %}
+  </section>
+  <section class="section">
+    <header><h2>The dataset</h2><p><a href="/samples">Browse samples</a></p></header>
+    <div class="table-wrap"><table class="tbl">
+      <thead><tr><th>Most common CWEs</th><th class="num">Samples</th></tr></thead>
+      <tbody>{% for c in stats.cwes[:8] %}<tr><td><a href="/samples?cwe={{ c.cwe }}">{{ c.cwe }}</a></td><td class="num">{{ c.n }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="small muted" style="margin-top:12px">Years {{ stats.years.lo }} to {{ stats.years.hi }}. Granularity: {% for g in stats.granularity %}{{ g.granularity }} {{ g.n }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+  </section>
+</div>
+{% endblock %}

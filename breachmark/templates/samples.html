@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Dataset · BreachMark{% endblock %}
+{% block content %}
+{% set f = filters %}
+<div class="page-head"><div><h1>Dataset</h1><p class="lede">{{ facets.total }} vulnerabilities from Linux, Mozilla and Xen, each paired with the commit that fixed it. Filter, then open a sample to see the fix as a diff.</p></div></div>
+
+<form method="get" action="/samples" class="filters">
+  <div class="field"><label for="q">Search</label><input type="search" id="q" name="q" value="{{ f.q }}" placeholder="CVE, commit, description"></div>
+  <div class="field"><label for="cwe">CWE</label><select id="cwe" name="cwe"><option value="">Any</option>{% for c in facets.cwes %}<option value="{{ c.cwe }}" {% if f.cwe == c.cwe %}selected{% endif %}>{{ c.cwe }} ({{ c.n }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="project">Project</label><select id="project" name="project"><option value="">Any</option>{% for p in facets.projects %}<option value="{{ p.project }}" {% if f.project == p.project %}selected{% endif %}>{{ p.project }} ({{ p.n }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="granularity">Granularity</label><select id="granularity" name="granularity"><option value="">Any</option>{% for g in facets.granularity %}<option value="{{ g.granularity }}" {% if f.granularity == g.granularity %}selected{% endif %}>{{ g.granularity }} ({{ g.n }})</option>{% endfor %}</select></div>
+  <div class="field"><label for="year_min">Year from</label><input type="number" id="year_min" name="year_min" value="{{ f.year_min }}" min="{{ facets.years.lo }}" max="{{ facets.years.hi }}"></div>
+  <div class="field"><label for="year_max">Year to</label><input type="number" id="year_max" name="year_max" value="{{ f.year_max }}" min="{{ facets.years.lo }}" max="{{ facets.years.hi }}"></div>
+  <div class="field"><label for="max_noise">Max noise %</label><input type="number" id="max_noise" name="max_noise" value="{{ f.max_noise }}" min="0" max="100"></div>
+  <div class="field"><span class="label">&nbsp;</span><div class="row"><button class="btn" type="submit">Filter</button><a class="btn ghost" href="/samples">Clear</a></div></div>
+</form>
+<p class="small muted">{{ result.total }} sample{{ '' if result.total == 1 else 's' }} match.</p>
+
+{% macro th(key, label, cls='') %}
+{% set nd = 'desc' if sort == key and dir == 'asc' else 'asc' %}
+<th class="{{ cls }}"><a href="/samples?q={{ f.q|urlencode }}&cwe={{ f.cwe }}&project={{ f.project }}&granularity={{ f.granularity }}&year_min={{ f.year_min }}&year_max={{ f.year_max }}&max_noise={{ f.max_noise }}&sort={{ key }}&dir={{ nd }}">{{ label }}{% if sort == key %} {{ '▲' if dir == 'asc' else '▼' }}{% endif %}</a></th>
+{% endmacro %}
+<div class="table-wrap"><table class="tbl">
+<thead><tr>{{ th('cve', 'CVE') }}{{ th('cwe', 'CWE') }}<th>Category</th>{{ th('project', 'Project') }}{{ th('year', 'Year', 'num') }}<th class="num">Files / functions</th><th>Granularity</th>{{ th('noise', 'Noise', 'num') }}{{ th('size', 'Size', 'num') }}</tr></thead>
+<tbody>
+{% for s in result.rows %}
+<tr><td class="nowrap"><a href="/samples/{{ s.id }}">{{ s.cve or ('#' ~ s.id) }}</a><div class="sub mono">{{ s.commit_hash[:10] }}</div></td>
+<td class="mono">{{ s.cwe or '' }}</td><td>{{ s.category or '' }}</td><td>{{ s.project or '' }}</td><td class="num">{{ s.year or '' }}</td>
+<td class="num">{{ s.num_files }} / {{ s.num_functions }}</td><td>{{ s.granularity }}</td>
+<td class="num">{% if s.noise is not none %}{{ s.noise|int }}%{% else %}<span class="muted">n/a</span>{% endif %}</td>
+<td class="num">{{ (s.vuln_chars / 1000)|round(1) }}k chars</td></tr>
+{% else %}
+<tr><td colspan="9" class="muted">No samples match these filters.</td></tr>
+{% endfor %}
+</tbody></table></div>
+{% if result.pages > 1 %}
+<div class="pager">
+  {% set base = "/samples?q=" ~ (f.q|urlencode) ~ "&cwe=" ~ f.cwe ~ "&project=" ~ f.project ~ "&granularity=" ~ f.granularity ~ "&year_min=" ~ f.year_min ~ "&year_max=" ~ f.year_max ~ "&max_noise=" ~ f.max_noise ~ "&sort=" ~ sort ~ "&dir=" ~ dir %}
+  {% if result.page > 1 %}<a class="btn ghost sm" href="{{ base }}&page_no={{ result.page - 1 }}">Previous</a>{% endif %}
+  <span class="small muted">Page {{ result.page }} of {{ result.pages }}</span>
+  {% if result.page < result.pages %}<a class="btn ghost sm" href="{{ base }}&page_no={{ result.page + 1 }}">Next</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

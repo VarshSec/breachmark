@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "_metrics.html" as M %}
+{% block title %}Compare · BreachMark{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Compare runs</h1><p class="lede">Put runs side by side, see where each model is strong, and check whether a majority vote across models beats the best single one.</p></div>
+{% if selected %}<div class="actions"><a class="btn ghost" href="/api/compare/export.csv?runs={{ selected|join(',') }}">Export CSV</a></div>{% endif %}</div>
+
+<form id="compare-form" class="panel" style="margin-top:22px">
+  {% if all_runs %}
+  <div class="form-grid">
+  {% for r in all_runs %}
+  <label class="check"><input type="checkbox" name="runs" value="{{ r.id }}" {% if r.id in selected %}checked{% endif %}><span><b>{{ r.name }}</b><span class="hint">{{ r.model }} · {{ r.provider }} · {{ r.status }}</span></span></label>
+  {% endfor %}
+  </div>
+  <div class="actions" style="margin-top:14px"><button class="btn primary" type="button" id="btn-compare">Compare selected</button></div>
+  {% else %}<p class="muted">There are no runs to compare yet. <a href="/runs/new">Start one</a>.</p>{% endif %}
+</form>
+
+{% if board %}
+<section class="section">
+  <header><h2>Standings</h2><p>Every run and strategy, best accuracy first.</p></header>
+  <ol class="standings">
+    <li class="head"><span></span><span>Model</span><span>Accuracy</span><span class="num">Finds vuln</span><span class="num">Clears patch</span><span class="num">Unsure</span></li>
+    {% for e in board %}
+    <li class="standing">
+      <span class="rank">{{ loop.index }}</span>
+      <span class="who"><b><a href="/runs/{{ e.run_id }}">{{ e.model }}</a>{% if e.provider == 'mock' %} <span class="badge mock">synthetic</span>{% endif %}</b><span>{{ e.strategy }} · {{ e.run_name }} · {{ e.n }} answers{% if e.cost is not none %} · ${{ '%.2f'|format(e.cost) }}{% endif %}</span></span>
+      <span class="score"><span class="bar"><i style="--w:{{ (e.accuracy or 0) * 100 }}%"></i></span><b>{{ e.accuracy|pct }}</b></span>
+      <span class="stat">{{ e.tpr|pct(0) }}<small>recall</small></span>
+      <span class="stat">{{ e.tnr|pct(0) }}<small>specificity</small></span>
+      <span class="stat">{{ e.ambiguous_rate|pct(0) }}<small>ambiguous</small></span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+{% if ensembles %}
+<section class="section">
+  <header><h2>Majority vote</h2><p>Each sample is answered by every selected run; the majority answer wins and ties count as ambiguous.</p></header>
+  <div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Strategy</th><th class="num">Voters</th><th class="num">Ensemble accuracy</th><th class="num">Best single model</th><th>Difference</th></tr></thead>
+  <tbody>{% for e in ensembles %}
+  {% set d = (e.metrics.accuracy or 0) - (e.best.accuracy or 0) %}
+  <tr><td>{{ e.strategy }}</td><td class="num">{{ e.voters }}</td><td class="num"><b>{{ e.metrics.accuracy|pct }}</b></td><td class="num">{{ e.best.accuracy|pct }} <span class="sub">({{ e.best.model }})</span></td>
+  <td><span class="chip {{ 'good' if d > 0.005 else ('bad' if d < -0.005 else '') }}">{{ '+' if d > 0 else '' }}{{ (d * 100)|round(1) }} points</span></td></tr>
+  {% endfor %}</tbody></table></div>
+</section>
+{% endif %}
+
+<section class="section">
+  <header><h2>Detail for one run</h2>
+    <select data-focus-select>{% for r in all_runs if r.id in selected %}<option value="/compare?runs={{ selected|join(',') }}&focus={{ r.id }}" {% if r.id == focus_id %}selected{% endif %}>{{ r.name }} ({{ r.model }})</option>{% endfor %}</select></header>
+  <div class="grid-2">
+    {% for s, c in confusion.items() %}<div><h3 style="margin-bottom:8px">{{ s }}</h3>{{ M.confusion(c) }}</div>{% endfor %}
+  </div>
+  <h3 style="margin:28px 0 8px">By CWE</h3>
+  {{ M.heat(heatmap) }}
+  {% if breakdowns %}
+  <div class="row" style="margin:28px 0 8px"><h3>Breakdown for</h3><select data-focus-select>{% for s in focus_strats %}<option value="/compare?runs={{ selected|join(',') }}&focus={{ focus_id }}&strategy={{ s }}" {% if s == strat %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+  {{ M.breakdown_tables(breakdowns) }}
+  {% endif %}
+</section>
+{% elif selected %}
+<p class="muted" style="margin-top:20px">The selected runs have no finished answers yet.</p>
+{% endif %}
+{% endblock %}

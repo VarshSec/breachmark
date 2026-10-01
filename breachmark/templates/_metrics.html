@@ -1,0 +1,51 @@
+{# Shared partials for run and compare pages #}
+{% macro metrics_table(by_strategy, costs=None) %}
+<div class="table-wrap"><table class="tbl">
+<thead><tr><th>Strategy</th><th class="num">Answers</th><th class="num">Accuracy</th><th class="num">95% CI</th><th class="num">Finds vuln</th><th class="num">Clears patch</th><th class="num">Pair correct</th><th class="num">F1</th><th class="num">Ambiguous</th><th class="num">Latency</th><th class="num">Tokens in / out</th>{% if costs %}<th class="num">Cost</th>{% endif %}</tr></thead>
+<tbody>
+{% for s, m in by_strategy.items() %}
+<tr><td>{{ s }}</td><td class="num">{{ m.n }}{% if m.errors %} <span class="sub">({{ m.errors }} failed)</span>{% endif %}{% if m.skipped %} <span class="sub">({{ m.skipped }} skipped)</span>{% endif %}</td>
+<td class="num"><b>{{ m.accuracy|pct }}</b></td><td class="num sub nowrap">{{ m.acc_lo|pct(0) }} to {{ m.acc_hi|pct(0) }}</td>
+<td class="num">{{ m.tpr|pct }}</td><td class="num">{{ m.tnr|pct }}</td><td class="num">{{ m.pair_correct|pct }}</td><td class="num">{{ m.f1|pct }}</td>
+<td class="num">{{ m.ambiguous_rate|pct }}</td><td class="num">{{ m.avg_latency_ms|ms }}</td><td class="num">{{ m.prompt_tokens|tok }} / {{ m.completion_tokens|tok }}</td>
+{% if costs %}<td class="num">{% if costs[s] is not none %}${{ '%.2f'|format(costs[s]) }}{% else %}<span class="muted">n/a</span>{% endif %}</td>{% endif %}</tr>
+{% endfor %}
+</tbody></table></div>
+<p class="hint">Finds vuln = share of vulnerable samples answered YES (recall). Clears patch = share of patched samples answered NO (specificity). Pair correct = samples where both answers were right. Ambiguous answers count as wrong.</p>
+{% endmacro %}
+
+{% macro confusion(c) %}
+<table class="matrix">
+<thead><tr><th></th><th>Said YES</th><th>Said NO</th><th>Unclear</th></tr></thead>
+<tbody>
+<tr><th>Vulnerable code</th><td class="good">{{ c.vuln.yes }}</td><td class="bad">{{ c.vuln.no }}</td><td class="amb">{{ c.vuln.amb }}</td></tr>
+<tr><th>Patched code</th><td class="bad">{{ c.patch.yes }}</td><td class="good">{{ c.patch.no }}</td><td class="amb">{{ c.patch.amb }}</td></tr>
+</tbody></table>
+{% endmacro %}
+
+{% macro heat(h) %}
+{% if h and h.rows %}
+<div class="table-wrap" style="border:0"><table class="heat">
+<thead><tr><th class="row-h">CWE</th><th>n</th>{% for s in h.strategies %}<th>{{ s }}</th>{% endfor %}</tr></thead>
+<tbody>
+{% for r in h.rows %}
+<tr><th class="row-h">{{ r.cwe }}</th><td style="background:transparent" class="muted">{{ r.n }}</td>
+{% for c in r.cells %}{% if c.accuracy is none %}<td class="muted">–</td>{% else %}
+{% set a = c.accuracy %}
+<td style="background:color-mix(in srgb, {{ 'var(--good)' if a >= 0.5 else 'var(--bad)' }} {{ ((a - 0.5)|abs * 2 * 70 + 8)|int }}%, var(--panel));">{{ (a * 100)|round|int }}%<small>{{ c.n }}</small></td>
+{% endif %}{% endfor %}</tr>
+{% endfor %}
+</tbody></table></div>
+<p class="hint">Accuracy per CWE and strategy, most common CWEs first. Green is above 50% (better than a coin flip), red below.</p>
+{% else %}<p class="muted">No data yet.</p>{% endif %}
+{% endmacro %}
+
+{% macro breakdown_tables(breakdowns) %}
+<div class="breakdowns">
+{% for title, rows in breakdowns.items() %}
+<div><h3 style="margin-bottom:8px">{{ title }}</h3>
+<div class="table-wrap"><table class="tbl"><thead><tr><th>Group</th><th class="num">Answers</th><th class="num">Accuracy</th><th class="num">Finds vuln</th><th class="num">Clears patch</th></tr></thead>
+<tbody>{% for b in rows %}<tr><td class="nowrap">{{ b.label }}</td><td class="num">{{ b.n }}</td><td class="num">{{ b.accuracy|pct }}</td><td class="num">{{ b.tpr|pct(0) }}</td><td class="num">{{ b.tnr|pct(0) }}</td></tr>{% endfor %}</tbody></table></div></div>
+{% endfor %}
+</div>
+{% endmacro %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Settings · BreachMark{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Settings</h1><p class="lede">Check that model servers are reachable and manage API keys. Keys typed here stay in memory until the app stops; for anything permanent, put them in a <code>.env</code> file.</p></div></div>
+
+<section class="section">
+  <header><h2>Model providers</h2></header>
+  {% for p in providers if p.name != 'mock' %}
+  <div class="panel" style="margin-bottom:12px">
+    <div class="row" style="justify-content:space-between"><h3>{{ p.label }}</h3>
+      {% if p.needs_key %}<span class="badge {{ 'completed' if p.key_source != 'missing' else 'failed' }}">key: {{ p.key_source }}</span>{% endif %}</div>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="field"><label>Server URL</label><input type="text" data-base="{{ p.name }}" placeholder="{{ p.default_base_url }}"><span class="hint">Only used for this test. Set {{ 'OLLAMA_HOST' if p.name == 'ollama' else ('OPENAI_BASE_URL' if p.name == 'openai' else 'ANTHROPIC_BASE_URL') }} to change the default.</span></div>
+      {% if p.needs_key %}<div class="field"><label>API key (this session)</label><div class="row"><input type="password" data-key="{{ p.name }}" placeholder="paste key, or leave empty to clear" style="flex:1" autocomplete="off"><button class="btn ghost" type="button" data-save-key="{{ p.name }}">Save</button></div></div>{% endif %}
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn" type="button" data-ping="{{ p.name }}">Test connection</button><span class="small" data-ping-out="{{ p.name }}"></span></div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="section">
+  <header><h2>Data</h2></header>
+  <dl class="kv">
+    <dt>Database</dt><dd class="mono">{{ db_path }}</dd>
+    <dt>Dataset file</dt><dd class="mono">{{ dataset_path or 'not found' }}</dd>
+    <dt>Samples loaded</dt><dd>{{ sample_count }}</dd>
+  </dl>
+  <div class="actions" style="margin-top:12px"><button class="btn ghost" type="button" id="btn-import">Re-import dataset file</button><span class="hint">Updates sample metadata in place. Results are kept.</span></div>
+</section>
+
+<section class="section">
+  <header><h2>Credits</h2></header>
+  <p class="small">The vulnerability dataset and the four prompting strategies come from <i>Reasoning with LLMs for Zero-Shot Vulnerability Detection</i> by Arastoo Zibaeirad and Marco Vieira (2025), published at <a href="https://github.com/Erroristotle/VulnSage">github.com/Erroristotle/VulnSage</a> under CC BY 4.0 (data) and MIT (code). BreachMark is an independent tool built on that dataset.</p>
+</section>
+{% endblock %}

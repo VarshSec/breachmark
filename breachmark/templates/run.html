@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "_metrics.html" as M %}
+{% block title %}{{ run.name }} · BreachMark{% endblock %}
+{% block content %}
+<div id="run-root" data-run-id="{{ run.id }}" data-status="{{ run.status }}">
+<div class="page-head">
+  <div><h1>{{ run.name }}</h1>
+    <p class="lede">{{ run.model }} via {{ run.provider }}{% if run.provider == 'mock' %} <span class="badge mock">synthetic answers</span>{% endif %}. Created {{ run.created_at|dt }}{% if run.finished_at %}, finished {{ run.finished_at|dt }}{% endif %}.</p></div>
+  <div class="actions">
+    {% if active_run %}<button class="btn ghost" type="button" data-run-action="pause">Pause</button><button class="btn danger" type="button" data-run-action="cancel" data-confirm="Cancel this run? Finished answers are kept.">Cancel</button>
+    {% else %}
+      {% if progress.counts.pending %}<button class="btn primary" type="button" data-run-action="resume">Resume</button>{% endif %}
+      {% if progress.counts.error or progress.counts.skipped %}<button class="btn ghost" type="button" data-run-action="retry-errors">Retry failed</button>{% endif %}
+      <a class="btn ghost" href="/runs/{{ run.id }}/report">Report</a>
+      <a class="btn ghost" href="/api/runs/{{ run.id }}/export.csv">Export CSV</a>
+      <button class="btn danger" type="button" data-run-action="delete" data-confirm="Delete this run and all its results?">Delete</button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel" style="margin-top:22px">
+  <div class="row" style="justify-content:space-between"><span class="badge {{ run.status }}">{{ run.status }}</span><span class="small muted" data-progress-text>{{ progress.finished }} of {{ progress.total }} ({{ progress.percent }}%){% if progress.counts.error %}, {{ progress.counts.error }} failed{% endif %}{% if progress.eta_seconds is not none %}, about {{ progress.eta_seconds|eta }} left{% endif %}</span></div>
+  <div class="progress {{ run.status }}" style="margin-top:10px"><i data-progress-bar style="--w:{{ progress.percent }}%"></i></div>
+  {% if run.error %}<div class="notice {{ 'bad' if run.status == 'failed' else 'warn' }}" style="margin:14px 0 0"><b>{{ 'Stopped: ' if run.status == 'failed' else '' }}</b>{{ run.error }}</div>{% endif %}
+</div>
+
+{% if by_strategy %}
+<section class="section">
+  <header><h2>Results</h2><p>Strategies compared on the answers finished so far.</p></header>
+  {{ M.metrics_table(by_strategy, costs) }}
+</section>
+
+<div class="grid-2">
+<section class="section">
+  <header><h2>Answers for {{ focus }}</h2>
+  {% if strategies|length > 1 %}<form method="get"><select name="strategy" onchange="this.form.submit()">{% for s in strategies %}<option value="{{ s }}" {% if s == focus %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></form>{% endif %}</header>
+  {{ M.confusion(by_strategy[focus].confusion) }}
+</section>
+<section class="section">
+  <header><h2>Settings used</h2></header>
+  <dl class="kv small">
+    <dt>Temperature</dt><dd>{{ run.options.temperature }}</dd>
+    <dt>Max output tokens</dt><dd>{{ run.options.max_tokens }}</dd>
+    {% if run.provider == 'ollama' %}<dt>Context window</dt><dd>{{ run.options.num_ctx }} tokens</dd>{% endif %}
+    <dt>Input limit</dt><dd>{{ run.options.max_input_chars or 'none' }} characters, {{ run.options.input_policy }}</dd>
+    <dt>Parallel requests</dt><dd>{{ run.options.concurrency }}</dd>
+    <dt>Judge</dt><dd>{{ 'yes, ' ~ (run.options.judge_model or 'same model') if run.options.judge else 'no' }}</dd>
+    <dt>Filters</dt><dd class="mono">{{ run.filters|tojson }}</dd>
+  </dl>
+</section>
+</div>
+
+<section class="section"><header><h2>By CWE</h2></header>{{ M.heat(heatmap) }}</section>
+<section class="section"><header><h2>Breakdown for {{ focus }}</h2></header>{{ M.breakdown_tables(breakdowns) }}</section>
+{% endif %}
+
+<section class="section" id="results-browser">
+  <header><h2>Every answer</h2><p id="results-info"></p></header>
+  <div class="row" style="margin-bottom:12px">
+    <select id="rf-strategy"><option value="">All strategies</option>{% for s in strategies %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select>
+    <select id="rf-variant"><option value="">Both variants</option><option value="vuln">Vulnerable code</option><option value="patch">Patched code</option></select>
+    <select id="rf-outcome"><option value="">All outcomes</option><option value="correct">Correct</option><option value="wrong">Wrong</option><option value="ambiguous">Ambiguous</option><option value="error">Failed</option><option value="skipped">Skipped</option></select>
+  </div>
+  <div class="table-wrap"><table class="tbl"><thead><tr><th>Sample</th><th>CWE</th><th>Project</th><th>Strategy</th><th>Shown</th><th>Answer</th><th class="num">Latency</th><th></th></tr></thead><tbody id="results-body"></tbody></table></div>
+  <div class="pager"><button class="btn ghost sm" type="button" id="rp-prev">Previous</button><button class="btn ghost sm" type="button" id="rp-next">Next</button></div>
+</section>
+</div>
+{% endblock %}

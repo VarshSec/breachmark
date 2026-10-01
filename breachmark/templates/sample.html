@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ s.cve or ('Sample ' ~ s.id) }} · BreachMark{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ s.cve or ('Sample ' ~ s.id) }}</h1>
+    <p class="lede">{{ s.cwe or 'No CWE' }}{% if s.category %} ({{ s.category }}){% endif %} in {{ s.project }}, {{ s.year or 'year unknown' }}. {{ s.num_files }} file{{ '' if s.num_files == 1 else 's' }} and {{ s.num_functions }} function{{ '' if s.num_functions == 1 else 's' }} changed; granularity {{ s.granularity }}.</p>
+  </div>
+  <div class="actions">
+    {% if prev_id %}<a class="btn ghost" href="/samples/{{ prev_id }}">Previous</a>{% endif %}
+    {% if next_id %}<a class="btn ghost" href="/samples/{{ next_id }}">Next</a>{% endif %}
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top:22px">
+  <div>
+    <dl class="kv">
+      <dt>Commit</dt><dd class="mono">{{ s.commit_hash }}</dd>
+      <dt>Commit message</dt><dd>{{ s.description or '(none)' }}</dd>
+      <dt>Size</dt><dd>{{ s.vuln_lines }} lines vulnerable, {{ s.patch_lines }} lines patched ({{ s.lines_added }} added, {{ s.lines_deleted }} removed in the fix)</dd>
+    </dl>
+  </div>
+  <div>
+    <dl class="kv">
+      <dt>Noise estimate</dt><dd>{% if s.noise is not none %}{{ s.noise|int }}% of the patch is unrelated to the fix{% else %}not rated{% endif %}</dd>
+      {% if s.noise_reasoning %}<dt>Why</dt><dd class="small">{{ s.noise_reasoning }}</dd>{% endif %}
+    </dl>
+  </div>
+</div>
+
+<section class="section">
+  <header><h2>The fix</h2><p>{{ diff.added }} lines added, {{ diff.removed }} removed.
+    {% if diff.truncated %}Showing the first {{ diff.rows|length }} of {{ diff.total_rows }} rows.{% endif %}
+    {% if full %}<a href="/samples/{{ s.id }}">Show changes only</a>{% else %}<a href="/samples/{{ s.id }}?full=1">Show whole file</a>{% endif %}</p></header>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="diff" type="button">Diff</button>
+    <button role="tab" aria-selected="false" data-tab="vuln" type="button">Vulnerable code</button>
+    <button role="tab" aria-selected="false" data-tab="patch" type="button">Patched code</button>
+  </div>
+  <div class="code" data-pane="diff">
+    {% if diff.identical %}<p class="muted" style="padding:14px">The vulnerable and patched versions are identical line for line.</p>{% else %}
+    <table class="diff"><tbody>
+    {% for r in diff.rows %}
+    <tr class="{{ r.kind }}">{% if r.kind == 'gap' %}<td colspan="3">{{ r.text }}</td>{% else %}<td class="ln">{{ r.old or '' }}</td><td class="ln">{{ r.new or '' }}</td><td class="t">{{ r.text }}</td>{% endif %}</tr>
+    {% endfor %}
+    </tbody></table>{% endif %}
+  </div>
+  <div class="code" data-pane="vuln" hidden><pre>{{ vuln_code }}</pre></div>
+  <div class="code" data-pane="patch" hidden><pre>{{ patch_code }}</pre></div>
+  {% if code_cut %}<p class="hint">Code views are cut at 200,000 characters.</p>{% endif %}
+</section>
+
+<section class="section">
+  <header><h2>What models said</h2><p>Every stored answer about this sample.</p></header>
+  {% if results %}
+  <div class="table-wrap"><table class="tbl">
+  <thead><tr><th>Run</th><th>Strategy</th><th>Shown</th><th>Answer</th><th></th></tr></thead>
+  <tbody>
+  {% for r in results %}
+  <tr class="edge-{{ 'bad' if r.status == 'error' else ('amb' if r.verdict == 2 or r.status == 'skipped' else ('good' if r.correct else 'bad')) }}">
+    <td><a href="/runs/{{ r.run_id }}">{{ r.run_name }}</a><div class="sub">{{ r.model }}</div></td>
+    <td>{{ r.strategy }}</td><td>{{ variant_label[r.variant] }}</td>
+    <td>{% if r.status == 'done' %}<span class="chip {{ 'amb' if r.verdict == 2 else ('good' if r.correct else 'bad') }}">{{ {1:'YES',0:'NO',2:'AMBIGUOUS'}[r.verdict] }}</span> <span class="sub">expected {{ 'YES' if r.variant == 'vuln' else 'NO' }}</span>{% else %}<span class="chip {{ 'bad' if r.status == 'error' else 'amb' }}">{{ r.status|upper }}</span>{% endif %}</td>
+    <td><button class="btn ghost sm" type="button" data-result="{{ r.id }}">Details</button></td>
+  </tr>
+  {% endfor %}
+  </tbody></table></div>
+  {% else %}<p class="muted">No model has been asked about this sample yet.</p>{% endif %}
+</section>
+<script>
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
+}));
+</script>
+{% endblock %}
