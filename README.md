@@ -11,13 +11,13 @@ heatmaps, majority-vote ensembles and exportable reports.
 
 ## About
 
-BreachMark is a test bench for AI code reviewers. It answers one question with numbers instead of claims: *which language models can actually tell vulnerable code from safe code, and under which prompting?*
+BreachMark is a test bench for AI code reviewers. It answers one question with numbers instead of claims: *which language models can actually tell vulnerable code from safe code, under which prompting, and how much does being told what to look for help them?*
 
-It was built by [Varshit Sharma](https://github.com/VarshSec), a security engineering student, to turn the experiment from the VulnSage paper (Zibaeirad & Vieira, 2025) into a reusable tool that works with any model, keeps every answer, and explains its scores. It is not a vulnerability scanner: it measures the scanners. The Playground page lets you ask a model about your own code, but the core job is benchmarking.
+It was built by [Varshit Sharma](https://github.com/VarshSec), a security engineering student, to turn the experiment from the VulnSage paper (Zibaeirad & Vieira, 2025) into a reusable tool: any model, any provider, resumable runs, every answer kept, scores explained. Since then it has grown past that paper's setup with a second dataset (SVEN, adding Python), a blind mode that hides the CWE hint, and an importer for PrimeVul.
 
-Status: v0.1, working end to end, tested offline with a mock provider and against simulated Ollama, OpenAI and Anthropic APIs. Real-model runs are the next step; results and issues are welcome.
+It is not a vulnerability scanner: it measures the scanners. The Playground page lets you ask a model about your own code, but the core job is benchmarking.
 
-New here? Read [the plain-language explanation](docs/EXPLAINED-SIMPLY.md). On Windows? There's a [step-by-step PDF guide](docs/BreachMark-Windows-10-Running-Guide.pdf). Planning a study? Read the [research playbook](docs/RESEARCH-PLAYBOOK.md) ([PDF](docs/BreachMark-Research-Playbook.pdf)). Want the why? Read [the problem it solves](docs/WHY.md). Pointing an AI assistant at this repo? It should read [`llms.txt`](llms.txt).
+**Status:** v0.1. Working end to end: 59 automated tests, UI checked in a browser, crash recovery verified, bundled datasets import on first start. Tested offline against a mock provider and simulated Ollama, OpenAI and Anthropic APIs; the first large real-model runs are the next step, and results from them are welcome as issues or pull requests.
 
 ## What you can do
 
