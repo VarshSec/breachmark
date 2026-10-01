@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="640" viewBox="0 0 1400 640" font-family="IBM Plex Sans, Segoe UI, Helvetica, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4b5461"/></marker>
+    <style>
+      .box{fill:#ffffff;stroke:#d5dae0;stroke-width:1.5;rx:6}
+      .acc{fill:#eef0fb;stroke:#2f3fd0;stroke-width:1.5;rx:6}
+      .h{font-weight:600;font-size:15px;fill:#14181f}
+      .t{fill:#4b5461;font-size:13px}
+      .s{fill:#747e8c;font-size:12px}
+      .k{fill:#2f3fd0;font-weight:600;font-size:13px}
+      .flow{stroke:#4b5461;stroke-width:1.6;fill:none;marker-end:url(#arr)}
+      .yes{fill:#0f7059;font-weight:600} .no{fill:#ad2a3d;font-weight:600} .amb{fill:#94590a;font-weight:600}
+      .mono{font-family:Consolas, Menlo, monospace;font-size:12.5px}
+    </style>
+  </defs>
+  <rect width="1400" height="640" fill="#eceef1"/>
+  <text x="40" y="46" font-size="24" font-weight="700" fill="#14181f">How a BreachMark run works</text>
+  <text x="40" y="70" class="t">Every sample is asked about twice, as vulnerable and as patched code. A model earns credit only when it gets both right.</text>
+
+  <!-- 1 datasets -->
+  <rect x="40" y="110" width="250" height="150" class="box"/>
+  <text x="56" y="136" class="h">1. Datasets</text>
+  <text x="56" y="160" class="t">VulnSage · 593 C/C++ (Linux, Mozilla, Xen)</text>
+  <text x="56" y="180" class="t">SVEN · 803 C/C++ and Python</text>
+  <text x="56" y="200" class="t">PrimeVul · import your copy</text>
+  <text x="56" y="228" class="s">Each sample: vulnerable code + patched code,</text>
+  <text x="56" y="245" class="s">CWE, CVE, project, language, noise rating</text>
+
+  <!-- 2 run setup -->
+  <rect x="330" y="110" width="250" height="150" class="box"/>
+  <text x="346" y="136" class="h">2. Run setup</text>
+  <text x="346" y="160" class="t">Model + provider (Ollama, OpenAI-</text>
+  <text x="346" y="178" class="t">compatible, Anthropic, mock)</text>
+  <text x="346" y="200" class="t">Strategies: baseline, cot, think, think_verify</text>
+  <text x="346" y="220" class="t">Filters, sample limit, shuffle seed</text>
+  <text x="346" y="245" class="k">Blind mode: hide the CWE hint</text>
+
+  <!-- 3 tasks -->
+  <rect x="620" y="110" width="250" height="150" class="box"/>
+  <text x="636" y="136" class="h">3. Task list</text>
+  <text x="636" y="160" class="t">samples × 2 variants × strategies</text>
+  <text x="636" y="183" class="mono">vuln  → expected YES</text>
+  <text x="636" y="203" class="mono">patch → expected NO</text>
+  <text x="636" y="228" class="s">Stored as pending rows, so a run can be</text>
+  <text x="636" y="245" class="s">paused, resumed, or recovered after a crash</text>
+
+  <!-- 4 runner -->
+  <rect x="910" y="110" width="250" height="150" class="box"/>
+  <text x="926" y="136" class="h">4. Runner</text>
+  <text x="926" y="160" class="t">Async workers (concurrency you set)</text>
+  <text x="926" y="180" class="t">Retries with backoff (429, 5xx, timeouts)</text>
+  <text x="926" y="200" class="t">Stops after 10 failures in a row</text>
+  <text x="926" y="220" class="t">Pause · resume · cancel · retry failed</text>
+  <text x="926" y="245" class="s">Each answer is written as soon as it arrives</text>
+
+  <!-- 5 prompt -->
+  <rect x="1200" y="110" width="160" height="150" class="acc"/>
+  <text x="1216" y="136" class="h">5. Prompt</text>
+  <text x="1216" y="160" class="t">template +</text>
+  <text x="1216" y="178" class="mono">{language}</text>
+  <text x="1216" y="196" class="mono">{cwe} (or none)</text>
+  <text x="1216" y="214" class="mono">{code}</text>
+  <text x="1216" y="240" class="s">long code shortened,</text>
+  <text x="1216" y="255" class="s">flagged as truncated</text>
+
+  <!-- arrows row 1 -->
+  <path d="M290 185 H326" class="flow"/>
+  <path d="M580 185 H616" class="flow"/>
+  <path d="M870 185 H906" class="flow"/>
+  <path d="M1160 185 H1196" class="flow"/>
+
+  <!-- down from prompt to model -->
+  <path d="M1280 260 V318" class="flow"/>
+
+  <!-- 6 model -->
+  <rect x="1130" y="320" width="230" height="110" class="box"/>
+  <text x="1146" y="346" class="h">6. Model answers</text>
+  <text x="1146" y="370" class="t">one HTTP call per task</text>
+  <text x="1146" y="390" class="t">reasoning + a final line:</text>
+  <text x="1146" y="412" class="mono">VERDICT: YES / NO</text>
+
+  <!-- 7 parse -->
+  <rect x="820" y="320" width="270" height="110" class="box"/>
+  <text x="836" y="346" class="h">7. Parse</text>
+  <text x="836" y="370" class="t">strip &lt;think&gt; traces, read the last VERDICT</text>
+  <text x="836" y="390" class="t">optional judge model if nothing parses</text>
+  <text x="836" y="414"><tspan class="yes">YES</tspan><tspan class="t"> · </tspan><tspan class="no">NO</tspan><tspan class="t"> · </tspan><tspan class="amb">AMBIGUOUS</tspan><tspan class="t"> (counts as wrong)</tspan></text>
+
+  <!-- 8 store -->
+  <rect x="510" y="320" width="270" height="110" class="box"/>
+  <text x="526" y="346" class="h">8. Store</text>
+  <text x="526" y="370" class="t">verdict vs expected → correct or not</text>
+  <text x="526" y="390" class="t">full response, latency, tokens, truncated</text>
+  <text x="526" y="410" class="t">flag, prompt version used</text>
+
+  <!-- 9 analyse -->
+  <rect x="40" y="320" width="430" height="110" class="acc"/>
+  <text x="56" y="346" class="h">9. Analyse and compare</text>
+  <text x="56" y="370" class="t">Standings · accuracy with 95% CI · recall · specificity · F1</text>
+  <text x="56" y="390" class="t">Confusion matrix · CWE heatmap · breakdowns by dataset,</text>
+  <text x="56" y="410" class="t">language, project, year · ensembles · hinted vs blind · exports</text>
+
+  <!-- arrows row 2 (right to left) -->
+  <path d="M1130 375 H1094" class="flow"/>
+  <path d="M820 375 H784" class="flow"/>
+  <path d="M510 375 H474" class="flow"/>
+
+  <!-- loop note -->
+  <path d="M645 430 V470 H1110 V290 H1035 V266" class="flow" stroke-dasharray="5 4"/>
+  <text x="660" y="490" class="s">next pending task: repeat until the run completes. A paused or interrupted run picks up exactly where it stopped.</text>
+
+  <!-- footer -->
+  <rect x="40" y="545" width="1320" height="60" class="box"/>
+  <text x="56" y="570" class="h" font-size="14">What makes it fair</text>
+  <text x="56" y="592" class="t">Same samples (fixed seed), same settings, temperature 0, both code versions for every bug, prompts versioned, every answer kept. Change one thing at a time: the model, the strategy, or the hint.</text>
+</svg>

@@ -114,6 +114,9 @@ The two bundled sets are in `data/` with their licenses; PrimeVul must be added 
 
 ## How a run works
 
+![Pipeline: datasets, run setup, task list, runner, prompt, model, parse, store, analyse](docs/workflow.png)
+
+
 1. You pick a provider and model, one or more prompt strategies, and a slice of the dataset (filters, a sample
    limit, a shuffle seed). The page shows how many model calls that is before you start.
 2. For each sample, each strategy and each variant (vulnerable, patched) a task is created. Tasks run with the
