@@ -13,7 +13,7 @@ heatmaps, majority-vote ensembles and exportable reports.
 
 BreachMark is a test bench for AI code reviewers. It answers one question with numbers instead of claims: *which language models can actually tell vulnerable code from safe code, under which prompting, and how much does being told what to look for help them?*
 
-It was built by [Varshit Sharma](https://github.com/VarshSec), a security engineering student, to turn the experiment from the VulnSage paper (Zibaeirad & Vieira, 2025) into a reusable tool: any model, any provider, resumable runs, every answer kept, scores explained. Since then it has grown past that paper's setup with a second dataset (SVEN, adding Python), a blind mode that hides the CWE hint, and an importer for PrimeVul.
+It was built by [Varshit Sharma](https://github.com/VarshSec), Anshuman singh and Adarsh singh  security engineering students, to turn the experiment from the VulnSage paper (Zibaeirad & Vieira, 2025) into a reusable tool: any model, any provider, resumable runs, every answer kept, scores explained. Since then it has grown past that paper's setup with a second dataset (SVEN, adding Python), a blind mode that hides the CWE hint, and an importer for PrimeVul.
 
 It is not a vulnerability scanner: it measures the scanners. The Playground page lets you ask a model about your own code, but the core job is benchmarking.
 
